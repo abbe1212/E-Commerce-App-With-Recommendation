@@ -41,9 +41,9 @@
         }
         
         <!-- Wishlist Button -->
-        <button type="button" class="position-absolute btn btn-light btn-sm rounded-circle shadow-sm" 
+        <button type="button" class="position-absolute btn btn-light btn-sm rounded-circle shadow-sm wishlist-btn" 
                 style="top: 12px; right: 52px; width: 36px; height: 36px;"
-                onclick="toggleWishlist(@Model.ProductID)" title="Add to Wishlist">
+                onclick="toggleWishlistCard(@Model.ProductID, this)" title="Add to Wishlist">
             <i class="bi bi-heart"></i>
         </button>
     </div>
@@ -113,17 +113,40 @@
 </div>
 
 <script>
-    function toggleWishlist(productId) {
-        fetch(`/Profile/Wishlist/Toggle/${productId}`, { method: 'POST' })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Toggle heart icon
-                    event.target.classList.toggle('bi-heart');
-                    event.target.classList.toggle('bi-heart-fill');
-                    event.target.classList.toggle('text-danger');
+    function toggleWishlistCard(productId, button) {
+        var token = document.querySelector('input[name="__RequestVerificationToken"]');
+        if (!token) {
+            console.warn('Anti-forgery token not found');
+            return;
+        }
+        
+        $.ajax({
+            url: '/Product/ToggleWishlist',
+            type: 'POST',
+            data: { productId: productId },
+            headers: {
+                'RequestVerificationToken': token.value
+            },
+            success: function(response) {
+                if (response.success) {
+                    var icon = button.querySelector('i');
+                    if (response.isInWishlist) {
+                        icon.classList.remove('bi-heart');
+                        icon.classList.add('bi-heart-fill');
+                        button.classList.add('active');
+                    } else {
+                        icon.classList.remove('bi-heart-fill');
+                        icon.classList.add('bi-heart');
+                        button.classList.remove('active');
+                    }
+                } else if (response.message && response.message.includes('authenticated')) {
+                    window.location.href = '/Account/Login';
                 }
-            })
-            .catch(err => console.log('Wishlist error:', err));
+            },
+            error: function(err) {
+                console.log('Wishlist error:', err);
+            }
+        });
     }
 </script>
+

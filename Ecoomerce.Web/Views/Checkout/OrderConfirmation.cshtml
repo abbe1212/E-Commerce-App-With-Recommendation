@@ -112,6 +112,12 @@
                                 <p class="mb-1">@Model.City, @Model.State @Model.ZipCode</p>
                                 <p class="mb-1">@Model.Country</p>
                                 <p class="mb-0">@Model.Email</p>
+                                <hr class="my-2">
+                                <p class="mb-1"><strong>Method:</strong> @(Model.ShippingMethod ?? "Standard")</p>
+                                @if (!string.IsNullOrEmpty(Model.OrderNotes))
+                                {
+                                    <p class="mb-0"><strong>Note:</strong> @Model.OrderNotes</p>
+                                }
                             </div>
                         </div>
                     </div>

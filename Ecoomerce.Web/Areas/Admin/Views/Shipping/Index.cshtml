@@ -1,0 +1,258 @@
+@model IEnumerable<Ecommerce.Application.DTOs.Order.OrderDto>
+@{
+    ViewData["Title"] = "Shipping Management";
+    var currentStatus = ViewBag.CurrentStatus as string ?? "all";
+    var searchQuery = ViewBag.SearchQuery as string ?? "";
+}
+
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2><i class="bi bi-truck me-2"></i>Shipping Management</h2>
+                <a asp-area="Admin" asp-controller="Dashboard" asp-action="Index" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-1"></i>Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Pending</h6>
+                            <h3 class="mb-0">@Model.Count(o => o.Status == Ecommerce.Core.Enums.OrderStatus.pending)</h3>
+                        </div>
+                        <div class="bg-warning bg-opacity-10 p-3 rounded">
+                            <i class="bi bi-clock-history text-warning fs-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Processing</h6>
+                            <h3 class="mb-0">@Model.Count(o => o.Status == Ecommerce.Core.Enums.OrderStatus.processing)</h3>
+                        </div>
+                        <div class="bg-info bg-opacity-10 p-3 rounded">
+                            <i class="bi bi-gear text-info fs-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Shipped</h6>
+                            <h3 class="mb-0">@Model.Count(o => o.Status == Ecommerce.Core.Enums.OrderStatus.shipped)</h3>
+                        </div>
+                        <div class="bg-primary bg-opacity-10 p-3 rounded">
+                            <i class="bi bi-truck text-primary fs-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Delivered</h6>
+                            <h3 class="mb-0">@Model.Count(o => o.Status == Ecommerce.Core.Enums.OrderStatus.delivered)</h3>
+                        </div>
+                        <div class="bg-success bg-opacity-10 p-3 rounded">
+                            <i class="bi bi-check-circle text-success fs-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Filter by Status</label>
+                    <select name="status" class="form-select" onchange="this.form.submit()">
+                        <option value="all" selected="@(currentStatus == "all")">All Orders</option>
+                        <option value="pending" selected="@(currentStatus == "pending")">Pending</option>
+                        <option value="processing" selected="@(currentStatus == "processing")">Processing</option>
+                        <option value="shipped" selected="@(currentStatus == "shipped")">Shipped</option>
+                        <option value="delivered" selected="@(currentStatus == "delivered")">Delivered</option>
+                        <option value="cancelled" selected="@(currentStatus == "cancelled")">Cancelled</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Search</label>
+                    <input type="text" name="search" class="form-control" placeholder="Search by Order ID or User..." value="@searchQuery">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search me-1"></i>Search
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Orders Table -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white py-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Orders (@Model.Count())</h5>
+                <button type="button" class="btn btn-sm btn-outline-primary" onclick="toggleBulkActions()">
+                    <i class="bi bi-check-square me-1"></i>Bulk Actions
+                </button>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            @if (Model.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="bulk-action-column" style="display: none;">
+                                    <input type="checkbox" id="selectAll" class="form-check-input">
+                                </th>
+                                <th>Order ID</th>
+                                <th>Date</th>
+                                <th>Customer</th>
+                                <th>Shipping Method</th>
+                                <th>Status</th>
+                                <th>Total</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var order in Model)
+                            {
+                                <tr>
+                                    <td class="bulk-action-column" style="display: none;">
+                                        <input type="checkbox" name="orderIds" value="@order.OrderID" class="form-check-input order-checkbox">
+                                    </td>
+                                    <td><strong>#@order.OrderID</strong></td>
+                                    <td>@order.OrderDate.ToString("MMM dd, yyyy")</td>
+                                    <td>@order.UserID</td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(order.ShippingMethod))
+                                        {
+                                            <span class="badge bg-secondary">@order.ShippingMethod</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">N/A</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @switch (order.Status)
+                                        {
+                                            case Ecommerce.Core.Enums.OrderStatus.pending:
+                                                <span class="badge bg-warning text-dark">Pending</span>
+                                                break;
+                                            case Ecommerce.Core.Enums.OrderStatus.processing:
+                                                <span class="badge bg-info">Processing</span>
+                                                break;
+                                            case Ecommerce.Core.Enums.OrderStatus.shipped:
+                                                <span class="badge bg-primary">Shipped</span>
+                                                break;
+                                            case Ecommerce.Core.Enums.OrderStatus.delivered:
+                                                <span class="badge bg-success">Delivered</span>
+                                                break;
+                                            case Ecommerce.Core.Enums.OrderStatus.cancelled:
+                                                <span class="badge bg-danger">Cancelled</span>
+                                                break;
+                                        }
+                                    </td>
+                                    <td><strong>@order.TotalAmount.ToString("C")</strong></td>
+                                    <td>
+                                        <a asp-action="Details" asp-route-id="@order.OrderID" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-eye me-1"></i>View
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-inbox fs-1 text-muted"></i>
+                    <p class="text-muted mt-3">No orders found</p>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Bulk Actions Form (Hidden by default) -->
+    <form id="bulkActionsForm" asp-action="BulkUpdateStatus" method="post" style="display: none;" class="mt-3">
+        @Html.AntiForgeryToken()
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="row align-items-end">
+                    <div class="col-md-6">
+                        <label class="form-label">Update Selected Orders To:</label>
+                        <select name="newStatus" class="form-select" required>
+                            <option value="">Select Status...</option>
+                            <option value="processing">Processing</option>
+                            <option value="shipped">Shipped</option>
+                            <option value="delivered">Delivered</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle me-1"></i>Update Selected Orders
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="toggleBulkActions()">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        function toggleBulkActions() {
+            const bulkForm = document.getElementById('bulkActionsForm');
+            const bulkColumns = document.querySelectorAll('.bulk-action-column');
+            
+            if (bulkForm.style.display === 'none') {
+                bulkForm.style.display = 'block';
+                bulkColumns.forEach(col => col.style.display = 'table-cell');
+            } else {
+                bulkForm.style.display = 'none';
+                bulkColumns.forEach(col => col.style.display = 'none');
+                // Uncheck all
+                document.querySelectorAll('.order-checkbox').forEach(cb => cb.checked = false);
+                document.getElementById('selectAll').checked = false;
+            }
+        }
+
+        // Select all functionality
+        document.getElementById('selectAll')?.addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('.order-checkbox');
+            checkboxes.forEach(cb => cb.checked = this.checked);
+        });
+    </script>
+}

@@ -1,0 +1,266 @@
+@model Ecommerce.Application.DTOs.Order.OrderDetailsDto
+@{
+    ViewData["Title"] = $"Order #{Model.OrderID} - Shipping Management";
+}
+
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2><i class="bi bi-box-seam me-2"></i>Order #@Model.OrderID</h2>
+                <a asp-action="Index" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-1"></i>Back to Orders
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Order Details -->
+        <div class="col-lg-8">
+            <!-- Order Status Card -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Order Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Current Status:</strong></p>
+                            <h4>
+                                @switch (Model.Status)
+                                {
+                                    case Ecommerce.Core.Enums.OrderStatus.pending:
+                                        <span class="badge bg-warning text-dark fs-6">Pending</span>
+                                        break;
+                                    case Ecommerce.Core.Enums.OrderStatus.processing:
+                                        <span class="badge bg-info fs-6">Processing</span>
+                                        break;
+                                    case Ecommerce.Core.Enums.OrderStatus.shipped:
+                                        <span class="badge bg-primary fs-6">Shipped</span>
+                                        break;
+                                    case Ecommerce.Core.Enums.OrderStatus.delivered:
+                                        <span class="badge bg-success fs-6">Delivered</span>
+                                        break;
+                                    case Ecommerce.Core.Enums.OrderStatus.cancelled:
+                                        <span class="badge bg-danger fs-6">Cancelled</span>
+                                        break;
+                                }
+                            </h4>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Order Date:</strong></p>
+                            <p class="fs-5">@Model.OrderDate.ToString("MMMM dd, yyyy")</p>
+                        </div>
+                    </div>
+
+                    @if (Model.Status != Ecommerce.Core.Enums.OrderStatus.delivered && Model.Status != Ecommerce.Core.Enums.OrderStatus.cancelled)
+                    {
+                        <hr>
+                        <form asp-action="UpdateStatus" method="post" id="updateStatusForm">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="orderId" value="@Model.OrderID" />
+                            
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label"><strong>Update Status To:</strong></label>
+                                    <select name="newStatus" class="form-select" id="statusSelect" required>
+                                        <option value="">Select new status...</option>
+                                        @if (Model.Status == Ecommerce.Core.Enums.OrderStatus.pending)
+                                        {
+                                            <option value="processing">Processing</option>
+                                            <option value="shipped">Shipped</option>
+                                            <option value="cancelled">Cancelled</option>
+                                        }
+                                        @if (Model.Status == Ecommerce.Core.Enums.OrderStatus.processing)
+                                        {
+                                            <option value="shipped">Shipped</option>
+                                            <option value="cancelled">Cancelled</option>
+                                        }
+                                        @if (Model.Status == Ecommerce.Core.Enums.OrderStatus.shipped)
+                                        {
+                                            <option value="delivered">Delivered</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-6" id="trackingNumberField" style="display: none;">
+                                    <label class="form-label"><strong>Tracking Number:</strong></label>
+                                    <input type="text" name="trackingNumber" class="form-control" placeholder="Enter tracking number" />
+                                    <small class="text-muted">Required for shipping notification email</small>
+                                </div>
+                                <div class="col-12">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-check-circle me-1"></i>Update Status
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    }
+                </div>
+            </div>
+
+            <!-- Shipping Information -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="bi bi-truck me-2"></i>Shipping Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Shipping Method:</strong></p>
+                            <p>@(Model.ShippingMethod ?? "Standard")</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Estimated Delivery:</strong></p>
+                            <p>@(Model.EstimatedDeliveryDate?.ToString("MMMM dd, yyyy") ?? "Not specified")</p>
+                        </div>
+                        <div class="col-12">
+                            <p><strong>Shipping Address:</strong></p>
+                            <p class="mb-0">@Model.ShippingAddress</p>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(Model.OrderNotes))
+                    {
+                        <hr>
+                        <p><strong>Order Notes:</strong></p>
+                        <div class="alert alert-info mb-0">
+                            <i class="bi bi-chat-text me-2"></i>@Model.OrderNotes
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Order Items -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="bi bi-cart me-2"></i>Order Items</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Quantity</th>
+                                    <th>Unit Price</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model.Items)
+                                {
+                                    <tr>
+                                        <td>
+                                            <strong>@item.ProductName</strong>
+                                        </td>
+                                        <td>@item.Quantity</td>
+                                        <td>@item.UnitPrice.ToString("C")</td>
+                                        <td><strong>@((item.Quantity * item.UnitPrice).ToString("C"))</strong></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Sidebar -->
+        <div class="col-lg-4">
+            <!-- Customer Information -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="bi bi-person me-2"></i>Customer</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>User ID:</strong></p>
+                    <p>@Model.UserID</p>
+                    @if (!string.IsNullOrEmpty(Model.UserEmail))
+                    {
+                        <p><strong>Email:</strong></p>
+                        <p><a href="mailto:@Model.UserEmail">@Model.UserEmail</a></p>
+                    }
+                </div>
+            </div>
+
+            <!-- Order Summary -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="bi bi-receipt me-2"></i>Order Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Subtotal:</span>
+                        <span>@Model.Items.Sum(i => i.Quantity * i.UnitPrice).ToString("C")</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Shipping:</span>
+                        <span>Included</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Tax:</span>
+                        <span>Included</span>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <strong>Total:</strong>
+                        <strong class="text-primary fs-5">@Model.TotalAmount.ToString("C")</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Information -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="bi bi-credit-card me-2"></i>Payment</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Payment Method:</strong></p>
+                    <p>@Model.PaymentMethod</p>
+                    
+                    @if (Model.Payment != null)
+                    {
+                        <p><strong>Payment Status:</strong></p>
+                        <p>
+                            @switch (Model.Payment.PaymentStatus)
+                            {
+                                case Ecommerce.Core.Enums.PaymentStatus.Pending:
+                                    <span class="badge bg-warning text-dark">Pending</span>
+                                    break;
+                                case Ecommerce.Core.Enums.PaymentStatus.Paid:
+                                    <span class="badge bg-success">Paid</span>
+                                    break;
+                                case Ecommerce.Core.Enums.PaymentStatus.Failed:
+                                    <span class="badge bg-danger">Failed</span>
+                                    break;
+                            }
+                        </p>
+                        
+                        @if (!string.IsNullOrEmpty(Model.Payment.TransactionID))
+                        {
+                            <p><strong>Transaction ID:</strong></p>
+                            <p class="small text-muted">@Model.Payment.TransactionID</p>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Show tracking number field when "Shipped" is selected
+        document.getElementById('statusSelect')?.addEventListener('change', function() {
+            const trackingField = document.getElementById('trackingNumberField');
+            if (this.value === 'shipped') {
+                trackingField.style.display = 'block';
+                trackingField.querySelector('input').required = true;
+            } else {
+                trackingField.style.display = 'none';
+                trackingField.querySelector('input').required = false;
+            }
+        });
+    </script>
+}

@@ -1,0 +1,494 @@
+@model Ecommerce.Application.DTOs.Order.OrderDetailsDto
+@{
+    ViewData["Title"] = $"Order #{Model.OrderID}";
+    
+    var statusBadgeClass = Model.Status switch
+    {
+        Ecommerce.Core.Enums.OrderStatus.pending => "badge-pending",
+        Ecommerce.Core.Enums.OrderStatus.processing => "badge-processing",
+        Ecommerce.Core.Enums.OrderStatus.shipped => "badge-shipped",
+        Ecommerce.Core.Enums.OrderStatus.delivered => "badge-delivered",
+        Ecommerce.Core.Enums.OrderStatus.cancelled => "badge-cancelled",
+        _ => "badge-secondary"
+    };
+}
+
+@Html.AntiForgeryToken()
+
+<div class="container py-4">
+    <!-- Back Button & Header -->
+    <div class="d-flex align-items-center mb-4">
+        <a asp-action="Index" class="btn btn-link text-decoration-none p-0 me-3">
+            <i class="bi bi-arrow-left fs-4"></i>
+        </a>
+        <div>
+            <h1 class="order-detail-title mb-0">Order #@Model.OrderID</h1>
+            <p class="order-detail-date mb-0">
+                Placed on @Model.OrderDate.ToString("MMMM dd, yyyy") at @Model.OrderDate.ToString("hh:mm tt")
+            </p>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Left Column -->
+        <div class="col-lg-8">
+            <!-- Order Status Card -->
+            <div class="detail-card mb-4">
+                <div class="detail-card-header">
+                    <h5><i class="bi bi-info-circle me-2"></i>Order Status</h5>
+                </div>
+                <div class="detail-card-body">
+                    <div class="status-display">
+                        <span class="order-status-badge @statusBadgeClass large">
+                            @Model.Status.ToString().ToUpper()
+                        </span>
+                        
+                        @if (Model.Status == Ecommerce.Core.Enums.OrderStatus.pending || Model.Status == Ecommerce.Core.Enums.OrderStatus.processing)
+                        {
+                            <button type="button" class="btn btn-outline-danger btn-sm ms-3" onclick="cancelOrder(@Model.OrderID)">
+                                <i class="bi bi-x-circle me-1"></i>Cancel Order
+                            </button>
+                        }
+                    </div>
+                    
+                    <!-- Status Timeline -->
+                    <div class="status-timeline mt-4">
+                        @{
+                            var statuses = new[] { 
+                                ("pending", "Order Placed", "bi-cart-check"), 
+                                ("processing", "Processing", "bi-box-seam"), 
+                                ("shipped", "Shipped", "bi-truck"), 
+                                ("delivered", "Delivered", "bi-check-circle") 
+                            };
+                            var currentIndex = Array.FindIndex(statuses, s => s.Item1 == Model.Status.ToString().ToLower());
+                            if (Model.Status == Ecommerce.Core.Enums.OrderStatus.cancelled) currentIndex = -1;
+                        }
+                        
+                        @for (var i = 0; i < statuses.Length; i++)
+                        {
+                            var (statusKey, statusLabel, icon) = statuses[i];
+                            var isCompleted = i <= currentIndex;
+                            var isCurrent = i == currentIndex;
+                            
+                            <div class="timeline-step @(isCompleted ? "completed" : "") @(isCurrent ? "current" : "")">
+                                <div class="timeline-icon">
+                                    <i class="bi @icon"></i>
+                                </div>
+                                <span class="timeline-label">@statusLabel</span>
+                            </div>
+                            
+                            @if (i < statuses.Length - 1)
+                            {
+                                <div class="timeline-line @(i < currentIndex ? "completed" : "")"></div>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Order Items Card -->
+            <div class="detail-card">
+                <div class="detail-card-header">
+                    <h5><i class="bi bi-bag me-2"></i>Order Items (@Model.Items.Count())</h5>
+                </div>
+                <div class="detail-card-body p-0">
+                    @foreach (var item in Model.Items)
+                    {
+                        <div class="order-item">
+                            <div class="item-image">
+                                <img src="@(item.ImageURL ?? "/images/placeholder.jpg")" alt="@item.ProductName" />
+                            </div>
+                            <div class="item-details">
+                                <a asp-controller="Product" asp-action="Details" asp-route-id="@item.ProductID" 
+                                   class="item-name">@item.ProductName</a>
+                                <div class="item-meta">
+                                    <span class="item-price">@item.UnitPrice.ToString("N0") L.E</span>
+                                    <span class="item-qty">× @item.Quantity</span>
+                                </div>
+                            </div>
+                            <div class="item-total">
+                                @((item.UnitPrice * item.Quantity).ToString("N0")) L.E
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="col-lg-4">
+            <!-- Order Summary Card -->
+            <div class="detail-card mb-4">
+                <div class="detail-card-header">
+                    <h5><i class="bi bi-receipt me-2"></i>Order Summary</h5>
+                </div>
+                <div class="detail-card-body">
+                    <div class="summary-row">
+                        <span>Subtotal</span>
+                        <span>@Model.Items.Sum(i => i.UnitPrice * i.Quantity).ToString("N0") L.E</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Shipping</span>
+                        <span class="text-success">Free</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Tax</span>
+                        <span>0 L.E</span>
+                    </div>
+                    <hr />
+                    <div class="summary-row total">
+                        <span>Total</span>
+                        <span>@Model.TotalAmount.ToString("N0") L.E</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Shipping Address Card -->
+            <div class="detail-card mb-4">
+                <div class="detail-card-header">
+                    <h5><i class="bi bi-geo-alt me-2"></i>Shipping Address</h5>
+                </div>
+                <div class="detail-card-body">
+                    <p class="mb-0">@Model.ShippingAddress</p>
+                </div>
+            </div>
+
+            <!-- Payment Method Card -->
+            <div class="detail-card mb-4">
+                <div class="detail-card-header">
+                    <h5><i class="bi bi-credit-card me-2"></i>Payment Method</h5>
+                </div>
+                <div class="detail-card-body">
+                    <div class="payment-method-display">
+                        @switch (Model.PaymentMethod)
+                        {
+                            case Ecommerce.Core.Enums.PaymentMethod.CreditCard:
+                                <i class="bi bi-credit-card-2-front fs-4 me-2"></i>
+                                <span>Credit Card</span>
+                                break;
+                            case Ecommerce.Core.Enums.PaymentMethod.DebitCard:
+                                <i class="bi bi-credit-card fs-4 me-2"></i>
+                                <span>Debit Card</span>
+                                break;
+                            case Ecommerce.Core.Enums.PaymentMethod.CashOnDelivery:
+                                <i class="bi bi-cash-coin fs-4 me-2"></i>
+                                <span>Cash on Delivery</span>
+                                break;
+                            case Ecommerce.Core.Enums.PaymentMethod.DigitalWallet:
+                                <i class="bi bi-wallet2 fs-4 me-2"></i>
+                                <span>Digital Wallet</span>
+                                break;
+                            default:
+                                <i class="bi bi-question-circle fs-4 me-2"></i>
+                                <span>@Model.PaymentMethod</span>
+                                break;
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions Card -->
+            <div class="detail-card">
+                <div class="detail-card-header">
+                    <h5><i class="bi bi-lightning me-2"></i>Quick Actions</h5>
+                </div>
+                <div class="detail-card-body">
+                    <div class="d-grid gap-2">
+                        <a asp-action="Track" asp-route-id="@Model.OrderID" class="btn btn-outline-primary">
+                            <i class="bi bi-truck me-2"></i>Track Order
+                        </a>
+                        @if (Model.Status == Ecommerce.Core.Enums.OrderStatus.delivered)
+                        {
+                            <button type="button" class="btn btn-success" onclick="reorderItems(@Model.OrderID)">
+                                <i class="bi bi-arrow-repeat me-2"></i>Reorder
+                            </button>
+                        }
+                        <a asp-action="Index" class="btn btn-dark">
+                            <i class="bi bi-arrow-left me-2"></i>Back to Orders
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function cancelOrder(orderId) {
+            if (!confirm('Are you sure you want to cancel this order? This action cannot be undone.')) {
+                return;
+            }
+            
+            $.ajax({
+                url: '@Url.Action("Cancel")/' + orderId,
+                type: 'POST',
+                headers: {
+                    'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
+                },
+                success: function(response) {
+                    if (response.success) {
+                        showNotification(response.message, 'success');
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        showNotification(response.message, 'error');
+                    }
+                },
+                error: function() {
+                    showNotification('Failed to cancel order. Please try again.', 'error');
+                }
+            });
+        }
+
+        function reorderItems(orderId) {
+            $.ajax({
+                url: '@Url.Action("Reorder")/' + orderId,
+                type: 'POST',
+                headers: {
+                    'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
+                },
+                success: function(response) {
+                    if (response.success) {
+                        showNotification(response.message, 'success');
+                        if (response.redirect) {
+                            setTimeout(() => window.location.href = response.redirect, 1500);
+                        }
+                    } else {
+                        showNotification(response.message, 'error');
+                    }
+                },
+                error: function() {
+                    showNotification('Failed to add items to cart. Please try again.', 'error');
+                }
+            });
+        }
+
+        function showNotification(message, type) {
+            var alertClass = type === 'success' ? 'alert-success' : 
+                           type === 'error' ? 'alert-danger' : 'alert-info';
+            
+            var notification = $(`
+                <div class="alert ${alertClass} alert-dismissible fade show position-fixed" 
+                     style="top: 20px; right: 20px; z-index: 9999; min-width: 300px; border-radius: 12px;">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `);
+            
+            $('body').append(notification);
+            setTimeout(() => notification.alert('close'), 4000);
+        }
+    </script>
+}
+
+@section Styles {
+    <style>
+        .order-detail-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+        }
+        
+        .order-detail-date {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+        
+        .detail-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+        
+        .detail-card-header {
+            padding: 16px 20px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .detail-card-header h5 {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+        }
+        
+        .detail-card-body {
+            padding: 20px;
+        }
+        
+        /* Status Badge */
+        .order-status-badge.large {
+            padding: 10px 20px;
+            font-size: 0.85rem;
+        }
+        
+        .badge-pending { background: #fef3c7; color: #92400e; }
+        .badge-processing { background: #dbeafe; color: #1e40af; }
+        .badge-shipped { background: #e0e7ff; color: #3730a3; }
+        .badge-delivered { background: #d1fae5; color: #065f46; }
+        .badge-cancelled { background: #fee2e2; color: #991b1b; }
+        
+        /* Status Timeline */
+        .status-timeline {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 0;
+        }
+        
+        .timeline-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .timeline-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        .timeline-icon i {
+            font-size: 1.25rem;
+            color: var(--text-muted);
+        }
+        
+        .timeline-step.completed .timeline-icon {
+            background: var(--success-color);
+            border-color: var(--success-color);
+        }
+        
+        .timeline-step.completed .timeline-icon i {
+            color: white;
+        }
+        
+        .timeline-step.current .timeline-icon {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .timeline-label {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+        
+        .timeline-step.completed .timeline-label,
+        .timeline-step.current .timeline-label {
+            color: var(--text-color);
+        }
+        
+        .timeline-line {
+            flex: 1;
+            height: 3px;
+            background: var(--border-color);
+            margin: 0 -10px;
+            margin-bottom: 28px;
+        }
+        
+        .timeline-line.completed {
+            background: var(--success-color);
+        }
+        
+        /* Order Items */
+        .order-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .order-item:last-child {
+            border-bottom: none;
+        }
+        
+        .item-image {
+            width: 70px;
+            height: 70px;
+            border-radius: 10px;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        
+        .item-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .item-details {
+            flex: 1;
+        }
+        
+        .item-name {
+            font-weight: 600;
+            color: var(--text-color);
+            text-decoration: none;
+            display: block;
+            margin-bottom: 4px;
+        }
+        
+        .item-name:hover {
+            color: var(--primary-color);
+        }
+        
+        .item-meta {
+            display: flex;
+            gap: 12px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+        
+        .item-total {
+            font-weight: 700;
+            font-size: 1rem;
+        }
+        
+        /* Summary */
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .summary-row.total {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-color);
+            margin-bottom: 0;
+        }
+        
+        /* Payment Method */
+        .payment-method-display {
+            display: flex;
+            align-items: center;
+            color: var(--text-color);
+        }
+        
+        @@media (max-width: 768px) {
+            .status-timeline {
+                flex-wrap: wrap;
+                gap: 20px;
+            }
+            
+            .timeline-line {
+                display: none;
+            }
+            
+            .timeline-step {
+                flex: 0 0 45%;
+            }
+        }
+    </style>
+}

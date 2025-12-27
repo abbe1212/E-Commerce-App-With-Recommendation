@@ -9,6 +9,7 @@ namespace Ecommerce.Core.Enums
     public enum OrderStatus
     {
         pending,
+        processing,
         confirmed,   
         shipped,     
         delivered,   

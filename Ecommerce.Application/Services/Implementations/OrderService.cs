@@ -62,7 +62,7 @@ namespace Ecommerce.Application.Services.Implementations
                 }
             }
 
-        public async Task<OrderDto> CreateOrderAsync(string userId, string shippingAddress, string paymentMethod)
+        public async Task<OrderDto> CreateOrderAsync(string userId, string shippingAddress, string paymentMethod, string shippingMethod = "Standard", decimal shippingCost = 0, string orderNotes = "", decimal discountAmount = 0)
         {
 
             // Get user's cart
@@ -73,7 +73,7 @@ namespace Ecommerce.Application.Services.Implementations
             await _unitOfWork.BeginTransactionAsync();
             try
             {
-                decimal totalAmount = 0;
+                decimal subTotal = 0;
                 var orderItems = new List<OrderItem>();
 
                 foreach (var cartItem in cart.Items)
@@ -84,7 +84,7 @@ namespace Ecommerce.Application.Services.Implementations
                         throw new InvalidOperationException($"Product '{product?.Name ?? "ID: " + cartItem.ProductID}' is out of stock or insufficient quantity.");
                     }
 
-                    totalAmount += product.Price * cartItem.Quantity;
+                    subTotal += product.Price * cartItem.Quantity;
                     orderItems.Add(new OrderItem
                     {
                         ProductID = cartItem.ProductID,
@@ -92,13 +92,40 @@ namespace Ecommerce.Application.Services.Implementations
                         UnitPrice = product.Price
                     });
                 }
-                // إنشاء الطلب
+                
+                // Calculate tax (assuming 8% as per view)
+                decimal taxAmount = subTotal * 0.08m;
+                
+                // Calculate final total
+                decimal totalAmount = subTotal + taxAmount + shippingCost - discountAmount;
+                if (totalAmount < 0) totalAmount = 0;
+
+                // Calculate estimated delivery date based on shipping method
+                DateTime estimatedDeliveryDate = DateTime.UtcNow;
+                switch (shippingMethod.ToLower())
+                {
+                    case "express":
+                        estimatedDeliveryDate = estimatedDeliveryDate.AddDays(2);
+                        break;
+                    case "free":
+                        estimatedDeliveryDate = estimatedDeliveryDate.AddDays(7);
+                        break;
+                    case "standard":
+                    default:
+                        estimatedDeliveryDate = estimatedDeliveryDate.AddDays(5);
+                        break;
+                }
+
+                // Create order
                 var order = new Order
                 {
                     UserID = userId,
                     OrderDate = DateTime.UtcNow,
                     Status = OrderStatus.pending,
                     ShippingAddress = shippingAddress,
+                    ShippingMethod = shippingMethod,
+                    EstimatedDeliveryDate = estimatedDeliveryDate,
+                    OrderNotes = orderNotes,
                     TotalAmount = totalAmount,
                     OrderItems = orderItems
                 };
@@ -147,6 +174,13 @@ namespace Ecommerce.Application.Services.Implementations
         public async Task<IEnumerable<OrderDto>> GetUserOrdersAsync(string userId)
         {
             var orders = await _orderRepository.GetOrdersByUserIdAsync(userId);
+            return _mapper.Map<IEnumerable<OrderDto>>(orders);
+        }
+
+        // Get all orders for admin
+        public async Task<IEnumerable<OrderDto>> GetAllOrdersAsync()
+        {
+            var orders = await _orderRepository.ListAllAsync();
             return _mapper.Map<IEnumerable<OrderDto>>(orders);
         }
 

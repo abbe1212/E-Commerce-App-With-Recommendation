@@ -114,7 +114,11 @@ namespace Ecommerce.Application.Mapping
 
             // --- Wishlist Mappings ---
             CreateMap<Wishlist, WishlistDto>();
-            CreateMap<WishlistItem, WishlistItemDto>();
+            CreateMap<WishlistItem, WishlistItemDto>()
+                .ForMember(dest => dest.ProductName, opt => opt.MapFrom(src => src.Product != null ? src.Product.Name : null))
+                .ForMember(dest => dest.ImageURL, opt => opt.MapFrom(src => src.Product != null ? src.Product.ImageURL : null))
+                .ForMember(dest => dest.Price, opt => opt.MapFrom(src => src.Product != null ? src.Product.Price : 0))
+                .ForMember(dest => dest.IsAvailable, opt => opt.MapFrom(src => src.Product != null && src.Product.IsAvailable && src.Product.StockQuantity > 0));
 
             // --- Promotion Mappings ---
             // ➕ ADDED: Missing mapping for PromoCode

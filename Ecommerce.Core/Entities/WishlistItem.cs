@@ -13,5 +13,8 @@ namespace Ecommerce.Core.Entities
         [Required]
         public int ProductID { get; set; }
         public virtual Product Product { get; set; }
+        
+        public DateTime AddedAt { get; set; } = DateTime.UtcNow;
     }
 }
+

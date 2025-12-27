@@ -28,6 +28,13 @@ namespace Ecommerce.Infrastructure.Repositories
                  .FirstOrDefaultAsync(p => p.OrderID == orderId);
         }
 
+        // Get payment by transaction ID
+        public async Task<Payment?> GetByTransactionIdAsync(string transactionId)
+        {
+            return await _context.Payments
+                 .FirstOrDefaultAsync(p => p.TransactionID == transactionId);
+        }
+
         // Done
         public async Task<IEnumerable<Payment>> GetPaymentsByDateRangeAsync(DateTime startDate, DateTime endDate)
         {

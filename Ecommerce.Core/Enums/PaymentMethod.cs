@@ -9,8 +9,10 @@ namespace Ecommerce.Core.Enums
     public enum PaymentMethod
     {
         CreditCard,
+        DebitCard,
         PayPal,
         BankTransfer,
-        CashOnDelivery
+        CashOnDelivery,
+        DigitalWallet
     }
 }

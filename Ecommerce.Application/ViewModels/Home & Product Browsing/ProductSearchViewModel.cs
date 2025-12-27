@@ -1,4 +1,5 @@
 ﻿using Ecommerce.Application.DTOs.Products;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,6 +11,7 @@ namespace Ecommerce.Application.ViewModels
     public class ProductSearchViewModel
     {
         public List<ProductDto> Products { get; set; } = new();
+        public List<SelectListItem> Categories { get; set; } = new();
         public string? SearchTerm { get; set; }
         public int? CategoryId { get; set; }
         public int? BrandId { get; set; }
@@ -22,3 +24,4 @@ namespace Ecommerce.Application.ViewModels
         public int TotalCount { get; set; }
     }
 }
+

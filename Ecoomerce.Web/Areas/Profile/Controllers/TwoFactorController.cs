@@ -203,7 +203,7 @@ namespace Ecoomerce.Web.Areas.Profile.Controllers
         {
             return string.Format(
                 AuthenticatorUriFormat,
-                _urlEncoder.Encode("ShopSmart"),
+                _urlEncoder.Encode("Trendify - Ecommerce"),
                 _urlEncoder.Encode(email),
                 unformattedKey);
         }

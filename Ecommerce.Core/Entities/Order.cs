@@ -24,6 +24,17 @@ namespace Ecommerce.Core.Entities
         [Column(TypeName = "decimal(18,2)")]
         public decimal TotalAmount { get; set; }
 
+        // Shipping method selection
+        [MaxLength(50)]
+        public string? ShippingMethod { get; set; }
+
+        // Estimated delivery date based on shipping method
+        public DateTime? EstimatedDeliveryDate { get; set; }
+
+        // Special instructions from customer
+        [MaxLength(500)]
+        public string? OrderNotes { get; set; }
+
         public virtual Payment Payment { get; set; }
         public virtual Shipping Shipping { get; set; }
         public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();

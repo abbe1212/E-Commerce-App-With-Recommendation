@@ -95,7 +95,7 @@
 
             <!-- Order Summary -->
             <div class="col-lg-4">
-                <div class="card shadow-sm border-0">
+                <div class="card shadow-sm border-0 mb-3">
                     <div class="card-header bg-white">
                         <h5 class="mb-0">Order Total</h5>
                     </div>
@@ -112,13 +112,10 @@
                             <span>Tax</span>
                             <span id="tax" data-rate="0.08">@Model.Cart.Tax.ToString("C")</span>
                         </div>
-                        @if (Model.Cart.Discount > 0)
-                        {
-                            <div class="d-flex justify-content-between mb-2 text-success">
-                                <span>Discount</span>
-                                <span>-@Model.Cart.Discount.ToString("C")</span>
-                            </div>
-                        }
+                        <div id="discountRow" class="d-flex justify-content-between mb-2 text-success @(Model.Cart.Discount > 0 ? "" : "d-none")">
+                            <span>Discount</span>
+                            <span id="discountAmount">-@Model.Cart.Discount.ToString("C")</span>
+                        </div>
                         <hr>
                         <div class="d-flex justify-content-between mb-3">
                             <strong>Total</strong>
@@ -128,6 +125,51 @@
                         <button type="submit" class="btn btn-primary w-100">
                             Continue to Shipping
                         </button>
+                    </div>
+                </div>
+
+                <!-- Promo Code Card -->
+                <div class="card shadow-sm border-0 mb-3">
+                    <div class="card-header bg-white">
+                        <h6 class="mb-0"><i class="bi bi-tag me-2"></i>Promo Code</h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="promoCodeInput">
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="promoCode" name="PromoCode" 
+                                       placeholder="Enter promo code" maxlength="50">
+                                <button type="button" class="btn btn-outline-primary" id="applyPromoBtn">
+                                    Apply
+                                </button>
+                            </div>
+                            <div id="promoCodeMessage" class="small mt-2"></div>
+                        </div>
+                        <div id="promoCodeApplied" class="d-none">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="badge bg-success me-2"><i class="bi bi-check"></i></span>
+                                    <span id="appliedPromoCode" class="fw-bold"></span>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-danger" id="removePromoBtn">
+                                    <i class="bi bi-x"></i> Remove
+                                </button>
+                            </div>
+                            <div class="text-success small mt-2" id="promoSavings"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Order Notes Card -->
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-white">
+                        <h6 class="mb-0"><i class="bi bi-chat-text me-2"></i>Order Notes (Optional)</h6>
+                    </div>
+                    <div class="card-body">
+                        <textarea asp-for="OrderNotes" class="form-control" id="orderNotes" rows="3" 
+                                  placeholder="Add special instructions for your order..." maxlength="500"></textarea>
+                        <div class="form-text">
+                            <span id="notesCharCount">0</span>/500 characters
+                        </div>
                     </div>
                 </div>
             </div>
@@ -182,5 +224,161 @@
             from { opacity: 0; }
             to { opacity: 1; }
         }
+
+        .promo-loading {
+            pointer-events: none;
+            opacity: 0.6;
+        }
     </style>
+}
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const promoCodeInput = document.getElementById('promoCode');
+            const applyPromoBtn = document.getElementById('applyPromoBtn');
+            const removePromoBtn = document.getElementById('removePromoBtn');
+            const promoCodeMessage = document.getElementById('promoCodeMessage');
+            const promoCodeInputSection = document.getElementById('promoCodeInput');
+            const promoCodeAppliedSection = document.getElementById('promoCodeApplied');
+            const appliedPromoCode = document.getElementById('appliedPromoCode');
+            const promoSavings = document.getElementById('promoSavings');
+            const discountRow = document.getElementById('discountRow');
+            const discountAmount = document.getElementById('discountAmount');
+            const totalElement = document.getElementById('total');
+            const orderNotes = document.getElementById('orderNotes');
+            const notesCharCount = document.getElementById('notesCharCount');
+            
+            // Get subtotal from the page
+            const subtotalElement = document.getElementById('subtotal');
+            let subtotal = parseFloat(subtotalElement.textContent.replace(/[^0-9.-]+/g, '')) || 0;
+            
+            // Get antiforgery token
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+            // Apply promo code
+            applyPromoBtn.addEventListener('click', async function() {
+                const code = promoCodeInput.value.trim();
+                
+                if (!code) {
+                    showMessage('Please enter a promo code.', 'text-danger');
+                    return;
+                }
+                
+                applyPromoBtn.disabled = true;
+                applyPromoBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+                
+                try {
+                    const response = await fetch('/Checkout/ApplyPromoCode', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'RequestVerificationToken': token
+                        },
+                        body: JSON.stringify({ code: code, subTotal: subtotal })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        // Show applied state
+                        promoCodeInputSection.classList.add('d-none');
+                        promoCodeAppliedSection.classList.remove('d-none');
+                        appliedPromoCode.textContent = result.code;
+                        promoSavings.textContent = `You're saving ${result.discountFormatted}!`;
+                        
+                        // Update discount display
+                        discountRow.classList.remove('d-none');
+                        discountAmount.textContent = `-${result.discountFormatted}`;
+                        
+                        // Update total
+                        updateTotal(result.discount);
+                        
+                        // Store in hidden field
+                        let hiddenPromo = document.getElementById('hiddenPromoCode');
+                        if (!hiddenPromo) {
+                            hiddenPromo = document.createElement('input');
+                            hiddenPromo.type = 'hidden';
+                            hiddenPromo.id = 'hiddenPromoCode';
+                            hiddenPromo.name = 'Cart.PromoCode';
+                            document.querySelector('form').appendChild(hiddenPromo);
+                        }
+                        hiddenPromo.value = result.code;
+                        
+                        let hiddenDiscount = document.getElementById('hiddenDiscount');
+                        if (!hiddenDiscount) {
+                            hiddenDiscount = document.createElement('input');
+                            hiddenDiscount.type = 'hidden';
+                            hiddenDiscount.id = 'hiddenDiscount';
+                            hiddenDiscount.name = 'Cart.Discount';
+                            document.querySelector('form').appendChild(hiddenDiscount);
+                        }
+                        hiddenDiscount.value = result.discount;
+                    } else {
+                        showMessage(result.message, 'text-danger');
+                    }
+                } catch (error) {
+                    showMessage('Failed to apply promo code. Please try again.', 'text-danger');
+                } finally {
+                    applyPromoBtn.disabled = false;
+                    applyPromoBtn.innerHTML = 'Apply';
+                }
+            });
+            
+            // Remove promo code
+            removePromoBtn.addEventListener('click', async function() {
+                // Hide applied state
+                promoCodeAppliedSection.classList.add('d-none');
+                promoCodeInputSection.classList.remove('d-none');
+                promoCodeInput.value = '';
+                
+                // Hide discount
+                discountRow.classList.add('d-none');
+                discountAmount.textContent = '$0.00';
+                
+                // Update total
+                updateTotal(0);
+                
+                // Remove hidden fields
+                document.getElementById('hiddenPromoCode')?.remove();
+                document.getElementById('hiddenDiscount')?.remove();
+            });
+            
+            // Enter key support
+            promoCodeInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    applyPromoBtn.click();
+                }
+            });
+            
+            // Order notes character counter
+            if (orderNotes) {
+                orderNotes.addEventListener('input', function() {
+                    notesCharCount.textContent = this.value.length;
+                });
+            }
+            
+            function showMessage(message, className) {
+                promoCodeMessage.textContent = message;
+                promoCodeMessage.className = `small mt-2 ${className}`;
+                setTimeout(() => {
+                    promoCodeMessage.textContent = '';
+                    promoCodeMessage.className = 'small mt-2';
+                }, 5000);
+            }
+            
+            function updateTotal(discount) {
+                const shipping = parseFloat(document.getElementById('shipping').dataset.value) || 0;
+                const taxRate = parseFloat(document.getElementById('tax').dataset.rate) || 0.08;
+                const tax = subtotal * taxRate;
+                const total = subtotal + shipping + tax - discount;
+                totalElement.textContent = formatCurrency(total);
+            }
+            
+            function formatCurrency(value) {
+                return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
+            }
+        });
+    </script>
 }

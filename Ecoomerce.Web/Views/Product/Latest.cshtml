@@ -1,0 +1,254 @@
+@model IEnumerable<Ecommerce.Application.DTOs.Products.ProductDto>
+@{
+    ViewData["Title"] = "Latest Arrivals";
+}
+
+@Html.AntiForgeryToken()
+
+<div class="container py-4">
+    <!-- Page Header -->
+    <div class="shop-header mb-5">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <span class="badge bg-info bg-opacity-10 text-info px-3 py-2 mb-3">
+                    <i class="bi bi-clock-fill me-1"></i>Just Arrived
+                </span>
+                <h1 class="shop-title">Latest Arrivals</h1>
+                <p class="shop-subtitle">Fresh new products just added to our collection</p>
+            </div>
+            <div class="col-lg-4 text-lg-end">
+                <a asp-action="Index" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-1"></i>All Products
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Products Grid -->
+    <div class="row g-4" id="productsGrid">
+        @if (Model != null && Model.Any())
+        {
+            @foreach (var product in Model)
+            {
+                <div class="col-xl-3 col-lg-4 col-md-6">
+                    <div class="product-card-modern">
+                        <!-- Image Container -->
+                        <div class="product-image-wrapper">
+                            <a asp-action="Details" asp-route-id="@product.ProductID" class="product-image-link">
+                                @if (!string.IsNullOrEmpty(product.ImageURL))
+                                {
+                                    <img src="@product.ImageURL" class="product-image-main" alt="@product.Name">
+                                }
+                                else
+                                {
+                                    <div class="product-image-placeholder">
+                                        <i class="bi bi-image"></i>
+                                    </div>
+                                }
+                            </a>
+                            
+                            <!-- Badges -->
+                            <div class="product-badges">
+                                <span class="badge-new"><i class="bi bi-sparkles me-1"></i>New</span>
+                                @if (!product.IsAvailable)
+                                {
+                                    <span class="badge-out-of-stock">Sold Out</span>
+                                }
+                            </div>
+                            
+                            <!-- Quick Actions Overlay -->
+                            <div class="product-quick-actions">
+                                <button type="button" class="quick-action-btn" onclick="addToCart(@product.ProductID)" title="Add to Cart">
+                                    <i class="bi bi-bag-plus"></i>
+                                </button>
+                                <button type="button" class="quick-action-btn wishlist-btn" onclick="toggleWishlist(@product.ProductID, this)" title="Add to Wishlist">
+                                    <i class="bi bi-heart"></i>
+                                </button>
+                                <a asp-action="Details" asp-route-id="@product.ProductID" class="quick-action-btn" title="Quick View">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <!-- Product Info -->
+                        <div class="product-info">
+                            <!-- Category -->
+                            <div class="product-category">@product.CategoryName</div>
+                            
+                            <!-- Title -->
+                            <h5 class="product-title">
+                                <a asp-action="Details" asp-route-id="@product.ProductID">
+                                    @product.Name
+                                </a>
+                            </h5>
+                            
+                            <!-- Description -->
+                            @if (!string.IsNullOrEmpty(product.Description))
+                            {
+                                <p class="product-description-short">@product.Description</p>
+                            }
+                            
+                            <!-- Rating -->
+                            @if (product.AverageRating > 0)
+                            {
+                                <div class="product-rating">
+                                    <div class="stars">
+                                        @for (int i = 1; i <= 5; i++)
+                                        {
+                                            @if (i <= product.AverageRating)
+                                            {
+                                                <i class="bi bi-star-fill"></i>
+                                            }
+                                            else if (i - 0.5 <= product.AverageRating)
+                                            {
+                                                <i class="bi bi-star-half"></i>
+                                            }
+                                            else
+                                            {
+                                                <i class="bi bi-star"></i>
+                                            }
+                                        }
+                                    </div>
+                                    <span class="rating-count">(@product.AverageRating.ToString("F1"))</span>
+                                </div>
+                            }
+                            
+                            <!-- Brand -->
+                            @if (!string.IsNullOrEmpty(product.BrandName))
+                            {
+                                <div class="product-brand">
+                                    <i class="bi bi-award"></i> @product.BrandName
+                                </div>
+                            }
+                            
+                            <!-- Price Row -->
+                            <div class="product-price-row">
+                                <span class="product-price">@product.Price.ToString("N0") <small>L.E</small></span>
+                                @if (product.IsAvailable)
+                                {
+                                    <button type="button" class="add-to-cart-btn" onclick="addToCart(@product.ProductID)">
+                                        <i class="bi bi-plus"></i>
+                                    </button>
+                                }
+                                else
+                                {
+                                    <span class="out-of-stock-label">Sold Out</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="col-12">
+                <div class="empty-state-modern">
+                    <div class="empty-icon">
+                        <i class="bi bi-clock"></i>
+                    </div>
+                    <h4>No New Arrivals Yet</h4>
+                    <p>Check back soon for fresh new products!</p>
+                    <a asp-action="Index" class="view-all-btn">
+                        <i class="bi bi-arrow-left me-2"></i>Browse All Products
+                    </a>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function addToCart(productId) {
+            $.ajax({
+                url: '@Url.Action("AddToCart", "Product")',
+                type: 'POST',
+                data: { productId: productId, quantity: 1 },
+                headers: {
+                    'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
+                },
+                success: function(response) {
+                    if (response.success) {
+                        showNotification(response.message || 'Added to cart!', 'success');
+                    } else {
+                        if (response.message && response.message.includes('authenticated')) {
+                            showNotification('Please login to add items to cart', 'warning');
+                            setTimeout(function() {
+                                window.location.href = '@Url.Action("Login", "Account")';
+                            }, 1500);
+                        } else {
+                            showNotification(response.message || 'Error adding to cart', 'error');
+                        }
+                    }
+                },
+                error: function() {
+                    showNotification('Failed to add product to cart', 'error');
+                }
+            });
+        }
+
+        function toggleWishlist(productId, button) {
+            $.ajax({
+                url: '@Url.Action("ToggleWishlist", "Product")',
+                type: 'POST',
+                data: { productId: productId },
+                headers: {
+                    'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
+                },
+                success: function(response) {
+                    if (response.success) {
+                        const icon = button.querySelector('i');
+                        if (response.isInWishlist) {
+                            icon.classList.remove('bi-heart');
+                            icon.classList.add('bi-heart-fill');
+                            button.classList.add('active');
+                            showNotification('Added to wishlist!', 'success');
+                        } else {
+                            icon.classList.remove('bi-heart-fill');
+                            icon.classList.add('bi-heart');
+                            button.classList.remove('active');
+                            showNotification('Removed from wishlist', 'info');
+                        }
+                    }
+                }
+            });
+        }
+
+        function showNotification(message, type) {
+            var alertClass = type === 'success' ? 'alert-success' : 
+                           type === 'error' ? 'alert-danger' : 
+                           type === 'warning' ? 'alert-warning' : 'alert-info';
+            
+            var notification = $(`
+                <div class="alert ${alertClass} alert-dismissible fade show position-fixed" 
+                     style="top: 20px; right: 20px; z-index: 9999; min-width: 300px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15);">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `);
+            
+            $('body').append(notification);
+            
+            setTimeout(function() {
+                notification.alert('close');
+            }, 3000);
+        }
+    </script>
+}
+
+@section Styles {
+    <style>
+        .badge-new {
+            background: linear-gradient(135deg, #06b6d4, #0891b2);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
+        }
+    </style>
+}

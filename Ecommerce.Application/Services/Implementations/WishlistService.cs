@@ -30,7 +30,7 @@ namespace Ecommerce.Application.Services.Implementations
             var wishlist = await _wishlistRepository.GetWishlistByUserIdAsync(userId);
             if (!wishlist.Items.Any(i => i.ProductID == productId))
             {
-                wishlist.Items.Add(new WishlistItem { ProductID = productId });
+                wishlist.Items.Add(new WishlistItem { ProductID = productId, AddedAt = DateTime.UtcNow });
                 if (wishlist.WishlistID == 0)
                     await _wishlistRepository.AddAsync(wishlist);
                 else

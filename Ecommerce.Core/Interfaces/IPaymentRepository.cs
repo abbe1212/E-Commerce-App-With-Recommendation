@@ -8,6 +8,9 @@ namespace Ecommerce.Core.Interfaces
         /// Gets a payment by its associated Order ID.
         Task<Payment?> GetPaymentByOrderIdAsync(int orderId);
 
+        /// Gets a payment by its transaction ID.
+        Task<Payment?> GetByTransactionIdAsync(string transactionId);
+
         /// Gets all payments with a specific status.
         Task<IEnumerable<Payment>> GetPaymentsByStatusAsync(PaymentStatus status);
 

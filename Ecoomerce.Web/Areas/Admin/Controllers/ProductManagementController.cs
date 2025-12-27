@@ -1,11 +1,14 @@
 using AutoMapper;
 using Ecommerce.Application.Services.Interfaces;
 using Ecommerce.Application.ViewModels.Admin_Panel;
+using Ecommerce.Core.Entities;
 using Ecommerce.Core.Interfaces;
+using Ecommerce.Infrastructure.Data;
 using Ecommerce.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
 
 namespace Ecoomerce.Web.Areas.Admin.Controllers
 {
@@ -19,6 +22,7 @@ namespace Ecoomerce.Web.Areas.Admin.Controllers
         private readonly IBrandRepository _brandRepository;
         private readonly IMapper _mapper;
         private readonly ILogger<ProductManagementController> _logger;
+        private readonly AppDbContext _context;
 
         public ProductManagementController(
             IProductService productService,
@@ -26,7 +30,8 @@ namespace Ecoomerce.Web.Areas.Admin.Controllers
             ICategoryRepository categoryRepository,
             IBrandRepository brandRepository,
             IMapper mapper,
-            ILogger<ProductManagementController> logger)
+            ILogger<ProductManagementController> logger,
+            AppDbContext context)
         {
             _productService = productService;
             _productRepository = productRepository;
@@ -34,6 +39,7 @@ namespace Ecoomerce.Web.Areas.Admin.Controllers
             _brandRepository = brandRepository;
             _mapper = mapper;
             _logger = logger;
+            _context = context;
         }
 
         // GET: Product Management Index
@@ -86,7 +92,9 @@ namespace Ecoomerce.Web.Areas.Admin.Controllers
                 var viewModel = new EditProductViewModel
                 {
                     Categories = categories,
-                    Brands = brands
+                    Brands = brands,
+                    Images = new List<Ecommerce.Application.DTOs.Products.ProductImageDto>(),
+                    Variants = new List<Ecommerce.Application.DTOs.Products.ProductVariantDto>()
                 };
                 
                 _logger.LogInformation("Returning Create view with model");
@@ -107,7 +115,7 @@ namespace Ecoomerce.Web.Areas.Admin.Controllers
         // Handles the submission of the new product form
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(EditProductViewModel model, IFormFile? imageUpload)
+        public async Task<IActionResult> Create(EditProductViewModel model, IFormFile? imageUpload, IFormFileCollection? GalleryImages)
         {
             // Debug: Log all model values
             _logger.LogInformation("Create Product - Received model: Name={Name}, Price={Price}, CategoryID={CategoryID}, BrandID={BrandID}, StockQuantity={StockQuantity}, ImageURL={ImageURL}, ImageUpload={HasImage}", 
@@ -128,6 +136,8 @@ namespace Ecoomerce.Web.Areas.Admin.Controllers
                 // Repopulate dropdowns if validation fails
                 model.Categories = await GetCategoriesSelectList();
                 model.Brands = await GetBrandsSelectList();
+                model.Images = new List<Ecommerce.Application.DTOs.Products.ProductImageDto>();
+                model.Variants = new List<Ecommerce.Application.DTOs.Products.ProductVariantDto>();
                 
                 // Add validation errors to TempData for debugging
                 TempData["ValidationErrors"] = string.Join("; ", ModelState
@@ -203,6 +213,69 @@ namespace Ecoomerce.Web.Areas.Admin.Controllers
                 // Save to database
                 var savedProduct = await _productRepository.AddAsync(product);
 
+                // Save Gallery Images (file uploads)
+                if (GalleryImages != null && GalleryImages.Count > 0)
+                {
+                    int order = 0;
+                    string galleryFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "products", "gallery");
+                    
+                    if (!Directory.Exists(galleryFolder))
+                    {
+                        Directory.CreateDirectory(galleryFolder);
+                    }
+                    
+                    foreach (var file in GalleryImages)
+                    {
+                        if (file.Length > 0)
+                        {
+                            string uniqueFileName = $"{savedProduct.ProductID}_{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
+                            string filePath = Path.Combine(galleryFolder, uniqueFileName);
+                            
+                            using (var fileStream = new FileStream(filePath, FileMode.Create))
+                            {
+                                await file.CopyToAsync(fileStream);
+                            }
+                            
+                            var productImage = new ProductImage
+                            {
+                                ProductID = savedProduct.ProductID,
+                                ImageURL = $"/images/products/gallery/{uniqueFileName}",
+                                DisplayOrder = order,
+                                IsPrimary = order == 0,
+                                CreatedAt = DateTime.UtcNow
+                            };
+                            _context.ProductImages.Add(productImage);
+                            order++;
+                        }
+                    }
+                }
+
+                // Save Product Variants
+                if (model.NewVariants != null && model.NewVariants.Any())
+                {
+                    int variantOrder = 0;
+                    foreach (var v in model.NewVariants.Where(x => !string.IsNullOrWhiteSpace(x.VariantValue)))
+                    {
+                        var variant = new ProductVariant
+                        {
+                            ProductID = savedProduct.ProductID,
+                            VariantType = v.VariantType,
+                            VariantValue = v.VariantValue,
+                            PriceAdjustment = v.PriceAdjustment,
+                            StockQuantity = v.StockQuantity,
+                            ColorCode = v.ColorCode,
+                            IsAvailable = v.IsAvailable,
+                            DisplayOrder = variantOrder++,
+                            CreatedAt = DateTime.UtcNow
+                        };
+                        _context.ProductVariants.Add(variant);
+                    }
+                }
+
+                // Save images and variants to database
+                await _context.SaveChangesAsync();
+
+
                 _logger.LogInformation("Product saved successfully with ID: {ProductId}, ImageURL: '{ImageUrl}'", savedProduct.ProductID, savedProduct.ImageURL);
                 
                 // Verify the product was saved by retrieving it
@@ -257,6 +330,17 @@ namespace Ecoomerce.Web.Areas.Admin.Controllers
                     return RedirectToAction("Index");
                 }
 
+                // Load existing images and variants
+                var productImages = await _context.ProductImages
+                    .Where(i => i.ProductID == id)
+                    .OrderBy(i => i.DisplayOrder)
+                    .ToListAsync();
+                    
+                var productVariants = await _context.ProductVariants
+                    .Where(v => v.ProductID == id)
+                    .OrderBy(v => v.DisplayOrder)
+                    .ToListAsync();
+
                 var viewModel = new EditProductViewModel
                 {
                     ProductID = product.ProductID,
@@ -268,7 +352,9 @@ namespace Ecoomerce.Web.Areas.Admin.Controllers
                     CategoryID = product.CategoryID,
                     BrandID = product.BrandID,
                     Categories = await GetCategoriesSelectList(),
-                    Brands = await GetBrandsSelectList()
+                    Brands = await GetBrandsSelectList(),
+                    Images = _mapper.Map<List<Ecommerce.Application.DTOs.Products.ProductImageDto>>(productImages),
+                    Variants = _mapper.Map<List<Ecommerce.Application.DTOs.Products.ProductVariantDto>>(productVariants)
                 };
 
                 return View(viewModel);
@@ -284,7 +370,7 @@ namespace Ecoomerce.Web.Areas.Admin.Controllers
         // POST: Edit Product
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(EditProductViewModel model)
+        public async Task<IActionResult> Edit(EditProductViewModel model, IFormFileCollection? GalleryImages)
         {
             if (!ModelState.IsValid)
             {
@@ -314,10 +400,101 @@ namespace Ecoomerce.Web.Areas.Admin.Controllers
                 existingProduct.BrandID = model.BrandID;
                 existingProduct.UpdatedAt = DateTime.UtcNow;
 
-                // Save changes
+                // Save product changes
                 await _productRepository.UpdateAsync(existingProduct);
 
-                _logger.LogInformation("Product '{ProductName}' (ID: {ProductId}) updated.", model.Name, model.ProductID);
+                // Handle deleted images
+                if (Request.Form.ContainsKey("DeletedImageIds"))
+                {
+                    var deletedImageIds = Request.Form["DeletedImageIds"]
+                        .SelectMany(x => x?.Split(',') ?? Array.Empty<string>())
+                        .Where(x => int.TryParse(x, out _))
+                        .Select(int.Parse)
+                        .ToList();
+                    var imagesToDelete = await _context.ProductImages
+                        .Where(i => deletedImageIds.Contains(i.ImageID))
+                        .ToListAsync();
+                    _context.ProductImages.RemoveRange(imagesToDelete);
+                }
+
+                // Handle deleted variants
+                if (Request.Form.ContainsKey("DeletedVariantIds"))
+                {
+                    var deletedVariantIds = Request.Form["DeletedVariantIds"]
+                        .SelectMany(x => x?.Split(',') ?? Array.Empty<string>())
+                        .Where(x => int.TryParse(x, out _))
+                        .Select(int.Parse)
+                        .ToList();
+                    var variantsToDelete = await _context.ProductVariants
+                        .Where(v => deletedVariantIds.Contains(v.VariantID))
+                        .ToListAsync();
+                    _context.ProductVariants.RemoveRange(variantsToDelete);
+                }
+
+                // Add new images (file uploads)
+                if (GalleryImages != null && GalleryImages.Count > 0)
+                {
+                    var existingCount = await _context.ProductImages.CountAsync(i => i.ProductID == model.ProductID);
+                    int order = existingCount;
+                    string galleryFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "products", "gallery");
+                    
+                    if (!Directory.Exists(galleryFolder))
+                    {
+                        Directory.CreateDirectory(galleryFolder);
+                    }
+                    
+                    foreach (var file in GalleryImages)
+                    {
+                        if (file.Length > 0)
+                        {
+                            string uniqueFileName = $"{model.ProductID}_{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
+                            string filePath = Path.Combine(galleryFolder, uniqueFileName);
+                            
+                            using (var fileStream = new FileStream(filePath, FileMode.Create))
+                            {
+                                await file.CopyToAsync(fileStream);
+                            }
+                            
+                            var productImage = new ProductImage
+                            {
+                                ProductID = model.ProductID,
+                                ImageURL = $"/images/products/gallery/{uniqueFileName}",
+                                DisplayOrder = order,
+                                IsPrimary = existingCount == 0 && order == 0,
+                                CreatedAt = DateTime.UtcNow
+                            };
+                            _context.ProductImages.Add(productImage);
+                            order++;
+                        }
+                    }
+                }
+
+                // Add new variants
+                if (model.NewVariants != null && model.NewVariants.Any())
+                {
+                    var existingVariantCount = await _context.ProductVariants.CountAsync(v => v.ProductID == model.ProductID);
+                    int variantOrder = existingVariantCount;
+                    foreach (var v in model.NewVariants.Where(x => !string.IsNullOrWhiteSpace(x.VariantValue)))
+                    {
+                        var variant = new ProductVariant
+                        {
+                            ProductID = model.ProductID,
+                            VariantType = v.VariantType,
+                            VariantValue = v.VariantValue,
+                            PriceAdjustment = v.PriceAdjustment,
+                            StockQuantity = v.StockQuantity,
+                            ColorCode = v.ColorCode,
+                            IsAvailable = v.IsAvailable,
+                            DisplayOrder = variantOrder++,
+                            CreatedAt = DateTime.UtcNow
+                        };
+                        _context.ProductVariants.Add(variant);
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Product '{ProductName}' (ID: {ProductId}) updated with images/variants.", model.Name, model.ProductID);
                 TempData["SuccessMessage"] = $"Product '{model.Name}' updated successfully!";
                 return RedirectToAction("Index");
             }

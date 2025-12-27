@@ -17,5 +17,6 @@ namespace Ecommerce.Application.DTOs.Payment
         public decimal Amount { get; set; }
         public string Message { get; set; } = string.Empty; // Success or error message
         public string RedirectUrl { get; set; } = string.Empty;
+        public string? ClientSecret { get; set; } // For Stripe payment confirmation
     }
 }

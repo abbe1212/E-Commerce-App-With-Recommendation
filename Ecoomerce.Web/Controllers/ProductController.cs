@@ -1,7 +1,9 @@
 using Ecommerce.Application.Services.Interfaces;
 using Ecommerce.Application.ViewModels;
+using Ecommerce.Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace Ecoomerce.Web.Controllers
 {
@@ -11,6 +13,7 @@ namespace Ecoomerce.Web.Controllers
         private readonly IReviewService _reviewService;
         private readonly ICartService _cartService;
         private readonly IWishlistService _wishlistService;
+        private readonly ICategoryRepository _categoryRepository;
         private readonly ILogger<ProductController> _logger;
         private readonly IActivityLogService _activityLogService;
 
@@ -19,6 +22,7 @@ namespace Ecoomerce.Web.Controllers
             IReviewService reviewService,
             ICartService cartService,
             IWishlistService wishlistService,
+            ICategoryRepository categoryRepository,
             ILogger<ProductController> logger,
             IActivityLogService activityLogService)
         {
@@ -26,9 +30,11 @@ namespace Ecoomerce.Web.Controllers
             _reviewService = reviewService;
             _cartService = cartService;
             _wishlistService = wishlistService;
+            _categoryRepository = categoryRepository;
             _logger = logger;
             _activityLogService = activityLogService;
         }
+
 
         // Action for the main products page (handles searching and filtering)
         public async Task<IActionResult> Index(string? searchTerm, int? categoryId, decimal? minPrice, decimal? maxPrice, string? sortBy, int page = 1, int pageSize = 12)
@@ -43,6 +49,15 @@ namespace Ecoomerce.Web.Controllers
                     12 or 24 or 48 => pageSize,
                     _ => 12
                 };
+
+                // Fetch categories for filter dropdown
+                var categories = await _categoryRepository.ListAllAsync();
+                var categoryList = categories.Select(c => new SelectListItem
+                {
+                    Value = c.CategoryID.ToString(),
+                    Text = c.Name,
+                    Selected = c.CategoryID == categoryId
+                }).ToList();
 
                 var products = await _productService.SearchProductAsync(searchTerm, categoryId);
                 
@@ -72,6 +87,7 @@ namespace Ecoomerce.Web.Controllers
                 var viewModel = new ProductSearchViewModel
                 {
                     Products = paginatedProducts,
+                    Categories = categoryList,
                     SearchTerm = searchTerm,
                     CategoryId = categoryId,
                     MinPrice = minPrice,
@@ -457,8 +473,7 @@ namespace Ecoomerce.Web.Controllers
                 _logger.LogInformation("Fetching {Count} latest products", count);
                 var products = await _productService.GetAllProductsAsync();
                 var latestProducts = products.OrderByDescending(p => p.CreatedAt).Take(count).ToList();
-                ViewBag.Title = "Latest Arrivals";
-                return View("Featured", latestProducts);
+                return View(latestProducts);
             }
             catch (Exception ex)
             {
@@ -480,8 +495,7 @@ namespace Ecoomerce.Web.Controllers
                                            .OrderByDescending(p => p.DiscountPercentage)
                                            .Take(count)
                                            .ToList();
-                ViewBag.Title = "On Sale";
-                return View("Featured", saleProducts);
+                return View(saleProducts);
             }
             catch (Exception ex)
             {

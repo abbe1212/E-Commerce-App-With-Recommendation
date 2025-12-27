@@ -1,0 +1,401 @@
+@model Ecommerce.Application.DTOs.Order.OrderDetailsDto
+@{
+    ViewData["Title"] = $"Track Order #{Model.OrderID}";
+}
+
+<div class="container py-4">
+    <!-- Back Button & Header -->
+    <div class="d-flex align-items-center mb-4">
+        <a asp-action="Index" class="btn btn-link text-decoration-none p-0 me-3">
+            <i class="bi bi-arrow-left fs-4"></i>
+        </a>
+        <div>
+            <h1 class="page-title mb-0">Track Your Order</h1>
+            <p class="text-muted mb-0">Order #@Model.OrderID</p>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Main Tracking Section -->
+        <div class="col-lg-8">
+            <div class="tracking-card">
+                <!-- Status Header -->
+                <div class="tracking-header">
+                    <div class="tracking-status-icon @(Model.Status.ToString().ToLower())">
+                        @switch (Model.Status)
+                        {
+                            case Ecommerce.Core.Enums.OrderStatus.pending:
+                                <i class="bi bi-clock"></i>
+                                break;
+                            case Ecommerce.Core.Enums.OrderStatus.processing:
+                                <i class="bi bi-box-seam"></i>
+                                break;
+                            case Ecommerce.Core.Enums.OrderStatus.shipped:
+                                <i class="bi bi-truck"></i>
+                                break;
+                            case Ecommerce.Core.Enums.OrderStatus.delivered:
+                                <i class="bi bi-check-circle"></i>
+                                break;
+                            case Ecommerce.Core.Enums.OrderStatus.cancelled:
+                                <i class="bi bi-x-circle"></i>
+                                break;
+                        }
+                    </div>
+                    <div class="tracking-status-text">
+                        <h3>@GetStatusMessage(Model.Status)</h3>
+                        <p>@GetStatusDescription(Model.Status)</p>
+                    </div>
+                </div>
+
+                <!-- Tracking Timeline -->
+                <div class="tracking-timeline">
+                    @{
+                        var events = GetTrackingEvents(Model);
+                    }
+                    
+                    @foreach (var (time, title, description, isCompleted, isCurrent) in events)
+                    {
+                        <div class="timeline-item @(isCompleted ? "completed" : "") @(isCurrent ? "current" : "")">
+                            <div class="timeline-marker">
+                                @if (isCompleted)
+                                {
+                                    <i class="bi bi-check"></i>
+                                }
+                            </div>
+                            <div class="timeline-content">
+                                <div class="timeline-time">@time</div>
+                                <div class="timeline-title">@title</div>
+                                <div class="timeline-desc">@description</div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Info Sidebar -->
+        <div class="col-lg-4">
+            <!-- Delivery Info -->
+            <div class="info-card mb-4">
+                <h5><i class="bi bi-geo-alt me-2"></i>Delivery Address</h5>
+                <p class="mb-0">@Model.ShippingAddress</p>
+            </div>
+
+            @if (Model.Status == Ecommerce.Core.Enums.OrderStatus.shipped)
+            {
+                <!-- Estimated Delivery -->
+                <div class="info-card mb-4 highlight">
+                    <h5><i class="bi bi-calendar-check me-2"></i>Estimated Delivery</h5>
+                    <p class="delivery-date">@Model.OrderDate.AddDays(5).ToString("dddd, MMMM dd")</p>
+                    <small class="text-muted">Within 3-5 business days</small>
+                </div>
+            }
+
+            <!-- Order Summary -->
+            <div class="info-card mb-4">
+                <h5><i class="bi bi-receipt me-2"></i>Order Summary</h5>
+                <div class="order-mini-summary">
+                    <div class="summary-line">
+                        <span>Items</span>
+                        <span>@Model.Items.Count()</span>
+                    </div>
+                    <div class="summary-line">
+                        <span>Order Date</span>
+                        <span>@Model.OrderDate.ToString("MMM dd, yyyy")</span>
+                    </div>
+                    <div class="summary-line total">
+                        <span>Total</span>
+                        <span>@Model.TotalAmount.ToString("N0") L.E</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="info-card">
+                <h5><i class="bi bi-lightning me-2"></i>Quick Actions</h5>
+                <div class="d-grid gap-2">
+                    <a asp-action="Details" asp-route-id="@Model.OrderID" class="btn btn-primary">
+                        <i class="bi bi-eye me-2"></i>View Order Details
+                    </a>
+                    <a asp-controller="Home" asp-action="Contact" class="btn btn-outline-secondary">
+                        <i class="bi bi-headset me-2"></i>Contact Support
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@functions {
+    string GetStatusMessage(Ecommerce.Core.Enums.OrderStatus status)
+    {
+        return status switch
+        {
+            Ecommerce.Core.Enums.OrderStatus.pending => "Order Confirmed",
+            Ecommerce.Core.Enums.OrderStatus.processing => "Order is Being Prepared",
+            Ecommerce.Core.Enums.OrderStatus.shipped => "Your Order is On the Way!",
+            Ecommerce.Core.Enums.OrderStatus.delivered => "Order Delivered!",
+            Ecommerce.Core.Enums.OrderStatus.cancelled => "Order Cancelled",
+            _ => "Order Status Unknown"
+        };
+    }
+
+    string GetStatusDescription(Ecommerce.Core.Enums.OrderStatus status)
+    {
+        return status switch
+        {
+            Ecommerce.Core.Enums.OrderStatus.pending => "We've received your order and it's waiting to be processed.",
+            Ecommerce.Core.Enums.OrderStatus.processing => "Our team is preparing your order for shipment.",
+            Ecommerce.Core.Enums.OrderStatus.shipped => "Your order has been shipped and is on its way to you.",
+            Ecommerce.Core.Enums.OrderStatus.delivered => "Your order has been successfully delivered. Enjoy!",
+            Ecommerce.Core.Enums.OrderStatus.cancelled => "This order has been cancelled.",
+            _ => ""
+        };
+    }
+
+    List<(string Time, string Title, string Description, bool IsCompleted, bool IsCurrent)> GetTrackingEvents(Ecommerce.Application.DTOs.Order.OrderDetailsDto order)
+    {
+        var events = new List<(string, string, string, bool, bool)>();
+        var currentStatus = (int)order.Status;
+        
+        // Order Placed
+        events.Add((
+            order.OrderDate.ToString("MMM dd, hh:mm tt"),
+            "Order Placed",
+            "Your order has been confirmed",
+            currentStatus >= 0,
+            currentStatus == 0
+        ));
+        
+        // Processing
+        var processingTime = order.OrderDate.AddHours(2);
+        events.Add((
+            currentStatus >= 1 ? processingTime.ToString("MMM dd, hh:mm tt") : "--",
+            "Processing",
+            "Order is being prepared for shipment",
+            currentStatus >= 1,
+            currentStatus == 1
+        ));
+        
+        // Shipped
+        var shippedTime = order.OrderDate.AddDays(1);
+        events.Add((
+            currentStatus >= 2 ? shippedTime.ToString("MMM dd, hh:mm tt") : "--",
+            "Shipped",
+            "Package handed to carrier for delivery",
+            currentStatus >= 2,
+            currentStatus == 2
+        ));
+        
+        // Out for Delivery
+        var outTime = order.OrderDate.AddDays(4);
+        events.Add((
+            currentStatus >= 3 ? outTime.ToString("MMM dd, hh:mm tt") : "--",
+            "Out for Delivery",
+            "Package is out for delivery today",
+            currentStatus >= 3,
+            false
+        ));
+        
+        // Delivered
+        var deliveredTime = order.OrderDate.AddDays(5);
+        events.Add((
+            currentStatus >= 3 ? deliveredTime.ToString("MMM dd, hh:mm tt") : "--",
+            "Delivered",
+            "Package delivered successfully",
+            currentStatus >= 3,
+            currentStatus == 3
+        ));
+        
+        return events;
+    }
+}
+
+@section Styles {
+    <style>
+        .page-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+        }
+        
+        .tracking-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            overflow: hidden;
+        }
+        
+        .tracking-header {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 30px;
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-color) 100%);
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .tracking-status-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        
+        .tracking-status-icon i {
+            font-size: 2.5rem;
+        }
+        
+        .tracking-status-icon.pending { background: #fef3c7; color: #92400e; }
+        .tracking-status-icon.processing { background: #dbeafe; color: #1e40af; }
+        .tracking-status-icon.shipped { background: #e0e7ff; color: #3730a3; }
+        .tracking-status-icon.delivered { background: #d1fae5; color: #065f46; }
+        .tracking-status-icon.cancelled { background: #fee2e2; color: #991b1b; }
+        
+        .tracking-status-text h3 {
+            margin-bottom: 4px;
+            font-weight: 700;
+        }
+        
+        .tracking-status-text p {
+            color: var(--text-muted);
+            margin-bottom: 0;
+        }
+        
+        /* Timeline */
+        .tracking-timeline {
+            padding: 30px;
+        }
+        
+        .timeline-item {
+            display: flex;
+            gap: 20px;
+            padding-bottom: 30px;
+            position: relative;
+        }
+        
+        .timeline-item:last-child {
+            padding-bottom: 0;
+        }
+        
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: 15px;
+            top: 40px;
+            bottom: 0;
+            width: 2px;
+            background: var(--border-color);
+        }
+        
+        .timeline-item:last-child::before {
+            display: none;
+        }
+        
+        .timeline-item.completed::before {
+            background: var(--success-color);
+        }
+        
+        .timeline-marker {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            z-index: 1;
+        }
+        
+        .timeline-item.completed .timeline-marker {
+            background: var(--success-color);
+            border-color: var(--success-color);
+            color: white;
+        }
+        
+        .timeline-item.current .timeline-marker {
+            border-color: var(--primary-color);
+            border-width: 3px;
+            box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .timeline-content {
+            flex: 1;
+        }
+        
+        .timeline-time {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+        
+        .timeline-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: var(--text-color);
+        }
+        
+        .timeline-item:not(.completed):not(.current) .timeline-title {
+            color: var(--text-muted);
+        }
+        
+        .timeline-desc {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+        
+        /* Info Cards */
+        .info-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+        }
+        
+        .info-card h5 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .info-card.highlight {
+            border-color: var(--success-color);
+            background: linear-gradient(135deg, #d1fae5 0%, var(--card-bg) 100%);
+        }
+        
+        .delivery-date {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--success-color);
+            margin-bottom: 4px;
+        }
+        
+        .order-mini-summary .summary-line {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            color: var(--text-secondary);
+        }
+        
+        .order-mini-summary .summary-line.total {
+            border-top: 1px solid var(--border-color);
+            margin-top: 8px;
+            padding-top: 16px;
+            font-weight: 700;
+            color: var(--text-color);
+        }
+        
+        @@media (max-width: 768px) {
+            .tracking-header {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+    </style>
+}

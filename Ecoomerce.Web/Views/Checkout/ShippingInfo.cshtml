@@ -168,9 +168,81 @@
                                     <option value="CA">Canada</option>
                                     <option value="UK">United Kingdom</option>
                                     <option value="AU">Australia</option>
+                                    <option value="EG">Egypt</option>
                                     <!-- Add more countries as needed -->
                                 </select>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Shipping Method Selection -->
+                <div class="card shadow-sm border-0 mt-4">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0"><i class="bi bi-truck me-2"></i>Shipping Method</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="shipping-methods" id="shippingMethodsContainer">
+                            <!-- Standard Shipping -->
+                            <div class="form-check shipping-option mb-3 p-3 border rounded">
+                                <input class="form-check-input" type="radio" name="ShippingMethod" 
+                                       id="standardShipping" value="standard" checked data-cost="50" data-days="5">
+                                <label class="form-check-label w-100" for="standardShipping">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong>Standard Shipping</strong>
+                                            <div class="text-muted small">
+                                                <i class="bi bi-calendar-check me-1"></i>
+                                                Estimated delivery: <span class="estimated-date" id="standardDate"></span>
+                                            </div>
+                                        </div>
+                                        <span class="badge bg-secondary fs-6">$50.00</span>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <!-- Express Shipping -->
+                            <div class="form-check shipping-option mb-3 p-3 border rounded">
+                                <input class="form-check-input" type="radio" name="ShippingMethod" 
+                                       id="expressShipping" value="express" data-cost="150" data-days="2">
+                                <label class="form-check-label w-100" for="expressShipping">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong>Express Shipping</strong>
+                                            <span class="badge bg-primary ms-2">Fastest</span>
+                                            <div class="text-muted small">
+                                                <i class="bi bi-lightning me-1"></i>
+                                                Estimated delivery: <span class="estimated-date" id="expressDate"></span>
+                                            </div>
+                                        </div>
+                                        <span class="badge bg-primary fs-6">$150.00</span>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <!-- Free Shipping (if applicable) -->
+                            <div class="form-check shipping-option p-3 border rounded border-success d-none" id="freeShippingOption">
+                                <input class="form-check-input" type="radio" name="ShippingMethod" 
+                                       id="freeShipping" value="free" data-cost="0" data-days="7">
+                                <label class="form-check-label w-100" for="freeShipping">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong class="text-success">Free Shipping</strong>
+                                            <span class="badge bg-success ms-2">Best Value</span>
+                                            <div class="text-muted small">
+                                                <i class="bi bi-gift me-1"></i>
+                                                Estimated delivery: <span class="estimated-date" id="freeDate"></span>
+                                            </div>
+                                        </div>
+                                        <span class="badge bg-success fs-6">FREE</span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info mt-3 mb-0" id="deliveryEstimate">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <span id="deliveryMessage">Your order will arrive by <strong id="selectedDeliveryDate"></strong></span>
                         </div>
                     </div>
                 </div>
@@ -251,6 +323,89 @@
                 billingSection.classList.remove('d-none');
             }
         });
+
+        // Shipping method selection
+        function formatDate(date) {
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            return date.toLocaleDateString('en-US', options);
+        }
+
+        function updateEstimatedDates() {
+            const today = new Date();
+            
+            // Standard shipping (5 business days)
+            const standardDate = new Date(today);
+            standardDate.setDate(standardDate.getDate() + 5);
+            document.getElementById('standardDate').textContent = formatDate(standardDate);
+            
+            // Express shipping (2 business days)
+            const expressDate = new Date(today);
+            expressDate.setDate(expressDate.getDate() + 2);
+            document.getElementById('expressDate').textContent = formatDate(expressDate);
+            
+            // Free shipping (7 business days)
+            const freeDate = new Date(today);
+            freeDate.setDate(freeDate.getDate() + 7);
+            const freeDateElement = document.getElementById('freeDate');
+            if (freeDateElement) {
+                freeDateElement.textContent = formatDate(freeDate);
+            }
+        }
+
+        function updateSelectedDeliveryDate() {
+            const selectedMethod = document.querySelector('input[name="ShippingMethod"]:checked');
+            if (selectedMethod) {
+                const days = parseInt(selectedMethod.dataset.days);
+                const deliveryDate = new Date();
+                deliveryDate.setDate(deliveryDate.getDate() + days);
+                document.getElementById('selectedDeliveryDate').textContent = formatDate(deliveryDate);
+                
+                // Update shipping cost in summary
+                const cost = parseFloat(selectedMethod.dataset.cost);
+                const shippingElement = document.getElementById('shippingCost');
+                if (shippingElement) {
+                    shippingElement.textContent = cost === 0 ? 'FREE' : `$${cost.toFixed(2)}`;
+                }
+                
+                // Update total
+                updateOrderTotal(cost);
+            }
+        }
+
+        function updateOrderTotal(shippingCost) {
+            const subtotal = parseFloat(document.getElementById('subtotalValue')?.dataset.value || 0);
+            const tax = parseFloat(document.getElementById('taxValue')?.dataset.value || 0);
+            const discount = parseFloat(document.getElementById('discountValue')?.dataset.value || 0);
+            const total = subtotal + tax + shippingCost - discount;
+            
+            const totalElement = document.getElementById('orderTotal');
+            if (totalElement) {
+                totalElement.textContent = `$${total.toFixed(2)}`;
+            }
+        }
+
+        // Initialize dates on page load
+        updateEstimatedDates();
+        updateSelectedDeliveryDate();
+
+        // Listen for shipping method changes
+        document.querySelectorAll('input[name="ShippingMethod"]').forEach(function(radio) {
+            radio.addEventListener('change', function() {
+                updateSelectedDeliveryDate();
+                
+                // Add selected style
+                document.querySelectorAll('.shipping-option').forEach(opt => {
+                    opt.classList.remove('border-primary', 'bg-light');
+                });
+                this.closest('.shipping-option').classList.add('border-primary', 'bg-light');
+            });
+        });
+
+        // Initialize selected style
+        const initialSelected = document.querySelector('input[name="ShippingMethod"]:checked');
+        if (initialSelected) {
+            initialSelected.closest('.shipping-option').classList.add('border-primary', 'bg-light');
+        }
     </script>
 }
 
@@ -302,6 +457,24 @@
         .checkout-progress .step.completed .step-label {
             color: #198754;
             font-weight: 600;
+        }
+
+        .shipping-option {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .shipping-option:hover {
+            border-color: #0d6efd !important;
+            background-color: #f8f9fa;
+        }
+
+        .shipping-option.border-primary {
+            border-width: 2px !important;
+        }
+
+        .shipping-option .form-check-input {
+            margin-top: 0.5rem;
         }
     </style>
 }

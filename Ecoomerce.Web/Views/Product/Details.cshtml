@@ -5,280 +5,160 @@
 
 @Html.AntiForgeryToken()
 
-<div class="container-fluid">
+<div class="container py-4">
     <!-- Breadcrumb -->
     <nav aria-label="breadcrumb" class="mb-4">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
-            <li class="breadcrumb-item"><a asp-controller="Product" asp-action="Index">Products</a></li>
-            <li class="breadcrumb-item active" aria-current="page">@Model.Product.Name</li>
+        <ol class="breadcrumb" style="font-size: 0.9rem;">
+            <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index" class="text-decoration-none">Home</a></li>
+            <li class="breadcrumb-item"><a asp-controller="Product" asp-action="Index" class="text-decoration-none">Products</a></li>
+            <li class="breadcrumb-item active text-muted" aria-current="page">@Model.Product.Name</li>
         </ol>
     </nav>
-    <!-- Product Details -->
-    <div class="row mb-5">
-        <!-- Product Image with Zoom -->
-        <div class="col-lg-6 mb-4">
-            <div class="card shadow-sm">
-                <div class="position-relative product-image-container" id="imageContainer">
+
+    <!-- Product Details - Modern Layout -->
+    <div class="row g-5 mb-5">
+        <!-- Product Gallery -->
+        <div class="col-lg-6">
+            <div class="product-gallery-section">
+                <!-- Main Image -->
+                <div class="product-main-image-container" id="imageContainer">
                     @if (!string.IsNullOrEmpty(Model.Product.ImageURL))
                     {
-                        <img src="@Model.Product.ImageURL" class="card-img-top product-main-image" alt="@Model.Product.Name" 
-                             style="height: 500px; object-fit: cover; cursor: zoom-in;" id="productImage"
-                             onclick="openImageModal()" onmousemove="zoomImage(event)" onmouseleave="resetZoom()">
-                        <div class="zoom-lens" id="zoomLens"></div>
-                        <small class="position-absolute bottom-0 start-0 m-2 text-white bg-dark bg-opacity-50 px-2 py-1 rounded">
-                            <i class="bi bi-zoom-in"></i> Click or hover to zoom
-                        </small>
+                        <img src="@Model.Product.ImageURL" class="product-main-image-modern" alt="@Model.Product.Name" 
+                             id="productImage" onclick="openImageModal()" style="width: 100%;">
+                        
+                        <!-- Stock Badges -->
+                        @if (!Model.Product.IsAvailable)
+                        {
+                            <div class="position-absolute top-0 start-0 m-3">
+                                <span class="badge-out-of-stock">Out of Stock</span>
+                            </div>
+                        }
+                        else if (Model.Product.StockQuantity <= 5 && Model.Product.StockQuantity > 0)
+                        {
+                            <div class="position-absolute top-0 start-0 m-3">
+                                <span class="badge-low-stock">Only @Model.Product.StockQuantity left!</span>
+                            </div>
+                        }
                     }
                     else
                     {
-                        <div class="card-img-top d-flex align-items-center justify-content-center bg-light" 
-                             style="height: 500px;">
-                            <i class="bi bi-image text-muted" style="font-size: 5rem;"></i>
-                        </div>
-                    }
-                    
-                    @if (!Model.Product.IsAvailable)
-                    {
-                        <div class="position-absolute top-0 end-0 m-3">
-                            <span class="badge bg-danger fs-6">Out of Stock</span>
-                        </div>
-                    }
-                    else if (Model.Product.StockQuantity <= 5 && Model.Product.StockQuantity > 0)
-                    {
-                        <div class="position-absolute top-0 end-0 m-3">
-                            <span class="badge bg-warning fs-6">Only @Model.Product.StockQuantity left!</span>
+                        <div class="product-image-placeholder" style="height: 500px;">
+                            <i class="bi bi-image"></i>
                         </div>
                     }
                 </div>
                 
-                <!-- Image Gallery Thumbnails -->
-                @if (Model.Product.Images != null && Model.Product.Images.Any())
-                {
-                    <div class="card-footer bg-white">
-                        <div class="d-flex gap-2 overflow-auto py-2" id="imageThumbnails">
-                            <!-- Main Image Thumbnail -->
-                            <div class="gallery-thumb active" onclick="changeMainImage('@Model.Product.ImageURL', this)">
-                                <img src="@Model.Product.ImageURL" alt="Main" 
-                                     style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px; cursor: pointer;">
-                            </div>
-                            @foreach (var img in Model.Product.Images.OrderBy(i => i.DisplayOrder))
-                            {
-                                <div class="gallery-thumb" onclick="changeMainImage('@img.ImageURL', this)">
-                                    <img src="@img.ImageURL" alt="@(img.AltText ?? "Product Image")" 
-                                         style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px; cursor: pointer;">
-                                </div>
-                            }
-                        </div>
+                <!-- Thumbnails Gallery -->
+                <div class="product-thumbnails" id="imageThumbnails">
+                    <div class="thumbnail-item active" onclick="changeMainImage('@Model.Product.ImageURL', this)">
+                        <img src="@Model.Product.ImageURL" alt="Main">
                     </div>
-                }
-                else
-                {
-                    <!-- Placeholder gallery when no additional images -->
-                    <div class="card-footer bg-white">
-                        <div class="d-flex gap-2 py-2">
-                            <div class="gallery-thumb active">
-                                <img src="@Model.Product.ImageURL" alt="Main" 
-                                     style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px; opacity: 0.7;">
-                            </div>
-                            <div class="d-flex align-items-center text-muted small">
-                                <i class="bi bi-images me-1"></i> No additional images
-                            </div>
-                        </div>
-                    </div>
-                }
-            </div>
-        </div>
-
-<!-- Image Zoom Modal with Gallery -->
-<div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered">
-        <div class="modal-content bg-transparent border-0">
-            <div class="modal-body p-0 text-center position-relative">
-                <img src="@Model.Product.ImageURL" class="img-fluid rounded shadow-lg" alt="@Model.Product.Name" 
-                     style="max-height: 80vh; cursor: zoom-out;" id="modalImage" onclick="closeImageModal()">
-                
-                <!-- Modal Navigation -->
-                @if (Model.Product.Images != null && Model.Product.Images.Any())
-                {
-                    <button type="button" class="btn btn-dark position-absolute start-0 top-50 translate-middle-y ms-3" 
-                            onclick="prevModalImage()">
-                        <i class="bi bi-chevron-left fs-4"></i>
-                    </button>
-                    <button type="button" class="btn btn-dark position-absolute end-0 top-50 translate-middle-y me-3" 
-                            onclick="nextModalImage()">
-                        <i class="bi bi-chevron-right fs-4"></i>
-                    </button>
-                }
-                
-                <button type="button" class="btn btn-light btn-sm position-absolute top-0 end-0 m-3" 
-                        onclick="closeImageModal()">
-                    <i class="bi bi-x-lg"></i>
-                </button>
-                
-                <!-- Modal Thumbnails -->
-                @if (Model.Product.Images != null && Model.Product.Images.Any())
-                {
-                    <div class="d-flex justify-content-center gap-2 mt-3">
-                        <div class="modal-thumb active" onclick="setModalImage('@Model.Product.ImageURL', 0)">
-                            <img src="@Model.Product.ImageURL" alt="Main" 
-                                 style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px; cursor: pointer;">
-                        </div>
-                        @{ var imgIndex = 1; }
+                    @if (Model.Product.Images != null && Model.Product.Images.Any())
+                    {
                         @foreach (var img in Model.Product.Images.OrderBy(i => i.DisplayOrder))
                         {
-                            <div class="modal-thumb" onclick="setModalImage('@img.ImageURL', @imgIndex)">
-                                <img src="@img.ImageURL" alt="@(img.AltText ?? "Image")" 
-                                     style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px; cursor: pointer;">
+                            <div class="thumbnail-item" onclick="changeMainImage('@img.ImageURL', this)">
+                                <img src="@img.ImageURL" alt="@(img.AltText ?? "Product Image")">
                             </div>
-                            imgIndex++;
                         }
-                    </div>
-                }
+                    }
+                </div>
             </div>
         </div>
-    </div>
-</div>
-
 
         <!-- Product Information -->
         <div class="col-lg-6">
-            <div class="h-100">
-                <!-- Product Name -->
-                <h1 class="display-5 fw-bold text-primary mb-3">@Model.Product.Name</h1>
-
-                <!-- Category and Brand -->
-                <div class="mb-3">
-                    <span class="badge bg-secondary me-2">
-                        <i class="bi bi-tag"></i> @Model.Product.CategoryName
+            <div class="product-info-section">
+                <!-- Category & Brand Badges -->
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    <span class="product-brand-badge">
+                        <i class="bi bi-tag-fill"></i> @Model.Product.CategoryName
                     </span>
                     @if (!string.IsNullOrEmpty(Model.Product.BrandName))
                     {
-                        <span class="badge bg-info">
-                            <i class="bi bi-building"></i> @Model.Product.BrandName
+                        <span class="product-brand-badge">
+                            <i class="bi bi-award-fill"></i> @Model.Product.BrandName
                         </span>
                     }
                 </div>
 
+                <!-- Product Title -->
+                <h1 class="product-detail-title">@Model.Product.Name</h1>
+
                 <!-- Rating -->
                 @if (Model.Product.AverageRating > 0)
                 {
-                    <div class="mb-3">
-                        <div class="d-flex align-items-center">
+                    <div class="product-rating-detailed">
+                        <div class="stars">
                             @for (int i = 1; i <= 5; i++)
                             {
                                 @if (i <= Model.Product.AverageRating)
                                 {
-                                    <i class="bi bi-star-fill text-warning fs-5"></i>
+                                    <i class="bi bi-star-fill"></i>
                                 }
                                 else if (i - 0.5 <= Model.Product.AverageRating)
                                 {
-                                    <i class="bi bi-star-half text-warning fs-5"></i>
+                                    <i class="bi bi-star-half"></i>
                                 }
                                 else
                                 {
-                                    <i class="bi bi-star text-muted fs-5"></i>
+                                    <i class="bi bi-star" style="color: #d1d5db;"></i>
                                 }
                             }
-                            <span class="ms-2 text-muted">
-                                (@Model.Product.AverageRating.ToString("F1")) 
-                                @if (Model.Product.ReviewCount > 0)
-                                {
-                                    <span>• @Model.Product.ReviewCount review@(Model.Product.ReviewCount != 1 ? "s" : "")</span>
-                                }
-                            </span>
                         </div>
+                        <span class="rating-text">@Model.Product.AverageRating.ToString("F1")</span>
+                        @if (Model.Product.ReviewCount > 0)
+                        {
+                            <span class="review-count">(@Model.Product.ReviewCount review@(Model.Product.ReviewCount != 1 ? "s" : ""))</span>
+                        }
                     </div>
                 }
 
                 <!-- Price -->
-                <div class="mb-4">
-                    <h2 class="text-success fw-bold">@Model.Product.Price.ToString("N2") L.E</h2>
+                <div class="product-detail-price">
+                    @Model.Product.Price.ToString("N0") <small>L.E</small>
                 </div>
 
                 <!-- Description -->
                 @if (!string.IsNullOrEmpty(Model.Product.Description))
                 {
-                    <div class="mb-4">
-                        <h5 class="fw-bold">Description</h5>
-                        <p class="text-muted">@Model.Product.Description</p>
-                    </div>
+                    <p class="product-description">@Model.Product.Description</p>
                 }
-
-                <!-- Availability Status -->
-                <div class="mb-4">
-                    <h6 class="fw-bold">Availability</h6>
-                    @if (Model.Product.IsAvailable)
-                    {
-                        <span class="badge bg-success fs-6">
-                            <i class="bi bi-check-circle"></i> In Stock
-                        </span>
-                    }
-                    else
-                    {
-                        <span class="badge bg-danger fs-6">
-                            <i class="bi bi-x-circle"></i> Out of Stock
-                        </span>
-                    }
-                </div>
 
                 <!-- Product Variants (Size, Color, etc.) -->
                 @if (Model.Product.Variants != null && Model.Product.Variants.Any())
                 {
-                    <!-- Group variants by type -->
                     @foreach (var variantGroup in Model.Product.Variants.GroupBy(v => v.VariantType))
                     {
                         <div class="mb-4">
-                            <h6 class="fw-bold">@variantGroup.Key</h6>
+                            <label class="form-label fw-bold text-uppercase" style="font-size: 0.85rem; letter-spacing: 0.5px;">
+                                Select @variantGroup.Key
+                            </label>
                             <div class="d-flex flex-wrap gap-2">
                                 @foreach (var variant in variantGroup.OrderBy(v => v.DisplayOrder))
                                 {
                                     var isColorVariant = variantGroup.Key.Equals("Color", StringComparison.OrdinalIgnoreCase);
-                                    var priceLabel = variant.PriceAdjustment > 0 ? $"+{variant.PriceAdjustment:N0} L.E" : 
-                                                    variant.PriceAdjustment < 0 ? $"{variant.PriceAdjustment:N0} L.E" : "";
+                                    var priceLabel = variant.PriceAdjustment > 0 ? $"+{variant.PriceAdjustment:N0}" : 
+                                                    variant.PriceAdjustment < 0 ? $"{variant.PriceAdjustment:N0}" : "";
                                     
-                                    if (isColorVariant && !string.IsNullOrEmpty(variant.ColorCode))
-                                    {
-                                        <button type="button" class="btn btn-outline-secondary variant-btn @(variant.IsAvailable ? "" : "disabled")" 
-                                                data-variant-id="@variant.VariantID" 
-                                                data-variant-type="@variant.VariantType"
-                                                data-variant-value="@variant.VariantValue"
-                                                data-price-adjustment="@variant.PriceAdjustment"
-                                                onclick="selectVariant(this)"
-                                                @(variant.IsAvailable ? "" : "disabled")>
-                                            <span class="d-inline-block rounded-circle me-1" 
-                                                  style="width: 20px; height: 20px; background-color: @variant.ColorCode; border: 2px solid #ccc;"></span>
-                                            @variant.VariantValue
-                                            @if (!string.IsNullOrEmpty(priceLabel))
-                                            {
-                                                <small class="text-muted">(@priceLabel)</small>
-                                            }
-                                            @if (!variant.IsAvailable)
-                                            {
-                                                <small class="text-danger">(Out)</small>
-                                            }
-                                        </button>
-                                    }
-                                    else
-                                    {
-                                        <button type="button" class="btn btn-outline-secondary variant-btn @(variant.IsAvailable ? "" : "disabled")" 
-                                                data-variant-id="@variant.VariantID" 
-                                                data-variant-type="@variant.VariantType"
-                                                data-variant-value="@variant.VariantValue"
-                                                data-price-adjustment="@variant.PriceAdjustment"
-                                                onclick="selectVariant(this)"
-                                                @(variant.IsAvailable ? "" : "disabled")>
-                                            @variant.VariantValue
-                                            @if (!string.IsNullOrEmpty(priceLabel))
-                                            {
-                                                <small class="text-muted">(@priceLabel)</small>
-                                            }
-                                            @if (!variant.IsAvailable)
-                                            {
-                                                <small class="text-danger">(Out)</small>
-                                            }
-                                        </button>
-                                    }
+                                    <button type="button" class="variant-btn-modern @(variant.IsAvailable ? "" : "disabled")" 
+                                            data-variant-id="@variant.VariantID" 
+                                            data-variant-type="@variant.VariantType"
+                                            data-variant-value="@variant.VariantValue"
+                                            data-price-adjustment="@variant.PriceAdjustment"
+                                            onclick="selectVariant(this)"
+                                            @(variant.IsAvailable ? "" : "disabled")>
+                                        @if (isColorVariant && !string.IsNullOrEmpty(variant.ColorCode))
+                                        {
+                                            <span class="color-swatch" style="background-color: @variant.ColorCode;"></span>
+                                        }
+                                        <span class="variant-value">@variant.VariantValue</span>
+                                        @if (!string.IsNullOrEmpty(priceLabel))
+                                        {
+                                            <span class="variant-price">@priceLabel</span>
+                                        }
+                                    </button>
                                 }
                             </div>
                         </div>
@@ -287,52 +167,97 @@
                 }
 
                 <!-- Action Buttons -->
-                <div class="d-grid gap-2 d-md-block">
+                <div class="product-actions">
                     @if (Model.Product.IsAvailable)
                     {
-                        <button type="button" id="addToCartBtn" class="btn btn-primary btn-lg me-2" onclick="addToCart(@Model.Product.ProductID)">
-                            <i class="bi bi-cart-plus"></i> Add to Cart
+                        <button type="button" id="addToCartBtn" class="btn-add-to-cart-large" onclick="addToCart(@Model.Product.ProductID)">
+                            <i class="bi bi-bag-plus-fill"></i> Add to Cart
                         </button>
-                        <button type="button" id="buyNowBtn" class="btn btn-outline-secondary btn-lg me-2" onclick="buyNow(@Model.Product.ProductID)">
-                            <i class="bi bi-lightning"></i> Buy Now
+                        <button type="button" id="wishlistBtn" class="btn-wishlist-large @(Model.IsInWishlist ? "active" : "")" 
+                                onclick="toggleWishlist(@Model.Product.ProductID, this)">
+                            <i class="bi @(Model.IsInWishlist ? "bi-heart-fill" : "bi-heart")" id="wishlistIcon"></i>
                         </button>
                     }
-                    
-                    <button type="button" id="wishlistBtn" class="btn btn-outline-danger btn-lg" onclick="toggleWishlist(@Model.Product.ProductID, this)">
-                        <i class="bi @(Model.IsInWishlist ? "bi-heart-fill" : "bi-heart")" id="wishlistIcon"></i> 
-                        <span id="wishlistText">@(Model.IsInWishlist ? "Remove from Wishlist" : "Add to Wishlist")</span>
-                    </button>
+                    else
+                    {
+                        <button class="btn-add-to-cart-large" disabled style="opacity: 0.6; cursor: not-allowed;">
+                            <i class="bi bi-x-circle"></i> Out of Stock
+                        </button>
+                    }
                 </div>
-                
-                <!-- Loading Spinner (Hidden by default) -->
+
+                <!-- Loading Spinner -->
                 <div id="actionSpinner" class="d-none mt-3">
-                    <div class="spinner-border text-primary" role="status">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status">
                         <span class="visually-hidden">Loading...</span>
                     </div>
                     <span class="ms-2">Processing...</span>
                 </div>
 
-                <!-- Share Buttons -->
-                <div class="mt-4">
-                    <h6 class="fw-bold">Share this product</h6>
-                    <div class="btn-group" role="group">
-                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="shareProduct('facebook')">
-                            <i class="bi bi-facebook"></i>
-                        </button>
-                        <button type="button" class="btn btn-outline-info btn-sm" onclick="shareProduct('twitter')">
-                            <i class="bi bi-twitter"></i>
-                        </button>
-                        <button type="button" class="btn btn-outline-success btn-sm" onclick="shareProduct('whatsapp')">
-                            <i class="bi bi-whatsapp"></i>
-                        </button>
-                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="copyLink()">
-                            <i class="bi bi-link-45deg"></i>
-                        </button>
+                <!-- Product Meta -->
+                <div class="product-meta">
+                    <div class="meta-item">
+                        <i class="bi bi-truck"></i>
+                        <span><strong>Free Shipping</strong> on orders over 500 L.E</span>
                     </div>
+                    <div class="meta-item">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                        <span><strong>14-Day Returns</strong> on all products</span>
+                    </div>
+                    <div class="meta-item">
+                        <i class="bi bi-shield-check"></i>
+                        <span><strong>Secure Payment</strong> via encrypted checkout</span>
+                    </div>
+                </div>
+
+                <!-- Share Section -->
+                <div class="share-section">
+                    <label>Share:</label>
+                    <button type="button" class="share-btn" onclick="shareProduct('facebook')" title="Share on Facebook">
+                        <i class="bi bi-facebook"></i>
+                    </button>
+                    <button type="button" class="share-btn" onclick="shareProduct('twitter')" title="Share on Twitter">
+                        <i class="bi bi-twitter-x"></i>
+                    </button>
+                    <button type="button" class="share-btn" onclick="shareProduct('whatsapp')" title="Share on WhatsApp">
+                        <i class="bi bi-whatsapp"></i>
+                    </button>
+                    <button type="button" class="share-btn" onclick="copyLink()" title="Copy Link">
+                        <i class="bi bi-link-45deg"></i>
+                    </button>
                 </div>
             </div>
         </div>
     </div>
+
+<!-- Image Zoom Modal -->
+<div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content bg-transparent border-0">
+            <div class="modal-body p-0 text-center position-relative">
+                <img src="@Model.Product.ImageURL" class="img-fluid rounded-4 shadow-lg" alt="@Model.Product.Name" 
+                     style="max-height: 85vh; cursor: zoom-out;" id="modalImage" onclick="closeImageModal()">
+                
+                @if (Model.Product.Images != null && Model.Product.Images.Any())
+                {
+                    <button type="button" class="btn btn-dark btn-lg rounded-circle position-absolute start-0 top-50 translate-middle-y ms-3" 
+                            onclick="prevModalImage()" style="width: 50px; height: 50px;">
+                        <i class="bi bi-chevron-left"></i>
+                    </button>
+                    <button type="button" class="btn btn-dark btn-lg rounded-circle position-absolute end-0 top-50 translate-middle-y me-3" 
+                            onclick="nextModalImage()" style="width: 50px; height: 50px;">
+                        <i class="bi bi-chevron-right"></i>
+                    </button>
+                }
+                
+                <button type="button" class="btn btn-light rounded-circle position-absolute top-0 end-0 m-3" 
+                        onclick="closeImageModal()" style="width: 40px; height: 40px;">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
     <!-- Product Tags -->
     @if (Model.Product.Tags != null && Model.Product.Tags.Any())

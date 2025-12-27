@@ -62,7 +62,7 @@
     }
     
     function downloadRecoveryCodes() {
-        const text = 'ShopSmart Recovery Codes\n' + 
+        const text = 'Trendify - Ecommerce Recovery Codes\n' + 
                      '========================\n\n' + 
                      recoveryCodes.join('\n') + 
                      '\n\n(Keep these codes safe!)';
@@ -70,7 +70,7 @@
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'shopsmart-recovery-codes.txt';
+        a.download = 'Trendify - Ecommerce-recovery-codes.txt';
         a.click();
         URL.revokeObjectURL(url);
     }

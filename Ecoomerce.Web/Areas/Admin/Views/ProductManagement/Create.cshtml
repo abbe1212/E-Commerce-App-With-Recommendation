@@ -137,7 +137,146 @@
                                 </div>
                             </div>
                         </div>
-
+<!-- ===== PRODUCT IMAGES GALLERY SECTION ===== -->
+<div class="card mb-4">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+        <h6 class="mb-0"><i class="bi bi-images"></i> Product Images Gallery</h6>
+    </div>
+    <div class="card-body">
+        <!-- Existing Images (Edit mode only) -->
+        @if (Model.Images != null && Model.Images.Any())
+        {
+            <div class="row mb-3" id="existingImages">
+                @foreach (var img in Model.Images)
+                {
+                    <div class="col-md-3 mb-2" id="img-@img.ImageID">
+                        <div class="card">
+                            <img src="@img.ImageURL" class="card-img-top" style="height: 120px; object-fit: cover;">
+                            <div class="card-body p-2 text-center">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="PrimaryImageId" 
+                                           value="@img.ImageID" @(img.IsPrimary ? "checked" : "")>
+                                    <label class="form-check-label small">Primary</label>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-danger mt-1" 
+                                        onclick="deleteImage(@img.ImageID)">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                                <input type="hidden" name="ExistingImageIds" value="@img.ImageID">
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        
+        <!-- New Images Upload -->
+        <div class="mb-3">
+            <label class="form-label fw-semibold">Upload Gallery Images</label>
+            <input type="file" class="form-control" name="GalleryImages" id="galleryImagesInput" 
+                   accept="image/*" multiple onchange="previewGalleryImages(this)">
+            <div class="form-text">Select multiple images for the product gallery. Supported formats: JPG, PNG, GIF</div>
+        </div>
+        
+        <!-- Preview of selected images -->
+        <div id="galleryPreviewContainer" class="row mt-3">
+            <!-- Previews will be added here dynamically -->
+        </div>
+    </div>
+</div>
+<!-- ===== PRODUCT VARIANTS SECTION ===== -->
+<div class="card mb-4">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+        <h6 class="mb-0"><i class="bi bi-collection"></i> Product Variants (Size/Color)</h6>
+        <button type="button" class="btn btn-sm btn-outline-primary" onclick="addVariantRow()">
+            <i class="bi bi-plus"></i> Add Variant
+        </button>
+    </div>
+    <div class="card-body">
+        <!-- Existing Variants (Edit mode only) -->
+        @if (Model.Variants != null && Model.Variants.Any())
+        {
+            <table class="table table-sm mb-3" id="existingVariantsTable">
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>Value</th>
+                        <th>Price +/-</th>
+                        <th>Stock</th>
+                        <th>Color</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var v in Model.Variants)
+                    {
+                        <tr id="variant-@v.VariantID">
+                            <td>@v.VariantType</td>
+                            <td>@v.VariantValue</td>
+                            <td>@(v.PriceAdjustment >= 0 ? "+" : "")@v.PriceAdjustment.ToString("C")</td>
+                            <td>@v.StockQuantity</td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(v.ColorCode))
+                                {
+                                    <span class="d-inline-block rounded" 
+                                          style="width:20px; height:20px; background:@v.ColorCode"></span>
+                                }
+                            </td>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-danger" 
+                                        onclick="deleteVariant(@v.VariantID)">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                                <input type="hidden" name="ExistingVariantIds" value="@v.VariantID">
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        
+        <!-- New Variants Form -->
+        <div id="newVariantsContainer">
+            <!-- Dynamic rows will be added here -->
+        </div>
+        
+        <!-- Template row (hidden) -->
+        <template id="variantRowTemplate">
+            <div class="row mb-2 variant-row border rounded p-2">
+                <div class="col-md-2">
+                    <select class="form-select form-select-sm" name="NewVariants[INDEX].VariantType" 
+                            onchange="toggleColorPicker(this)">
+                        <option value="Size">Size</option>
+                        <option value="Color">Color</option>
+                        <option value="Material">Material</option>
+                        <option value="Style">Style</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <input type="text" class="form-control form-control-sm" 
+                           name="NewVariants[INDEX].VariantValue" placeholder="Value">
+                </div>
+                <div class="col-md-2">
+                    <input type="number" class="form-control form-control-sm" 
+                           name="NewVariants[INDEX].PriceAdjustment" value="0" step="0.01" placeholder="+/- Price">
+                </div>
+                <div class="col-md-2">
+                    <input type="number" class="form-control form-control-sm" 
+                           name="NewVariants[INDEX].StockQuantity" value="0" min="0" placeholder="Stock">
+                </div>
+                <div class="col-md-2 color-picker-col" style="display: none;">
+                    <input type="color" class="form-control form-control-sm form-control-color" 
+                           name="NewVariants[INDEX].ColorCode" value="#000000">
+                </div>
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeVariantRow(this)">
+                        <i class="bi bi-x"></i> Remove
+                    </button>
+                </div>
+            </div>
+        </template>
+    </div>
+</div>
                         <!-- Form Actions -->
                         <div class="row">
                             <div class="col-12">
@@ -360,6 +499,73 @@
             submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Creating Product...';
             submitBtn.disabled = true;
         });
+
+// ===== GALLERY IMAGE PREVIEW =====
+function previewGalleryImages(input) {
+    const container = document.getElementById('galleryPreviewContainer');
+    container.innerHTML = '';
+    
+    if (input.files && input.files.length > 0) {
+        Array.from(input.files).forEach((file, index) => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const col = document.createElement('div');
+                col.className = 'col-md-3 mb-2';
+                col.innerHTML = `
+                    <div class="card">
+                        <img src="${e.target.result}" class="card-img-top" style="height: 120px; object-fit: cover;">
+                        <div class="card-body p-2 text-center">
+                            <small class="text-muted">${file.name}</small>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(col);
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+}
+function deleteImage(imageId) {
+    if (confirm('Delete this image?')) {
+        // Add hidden input to mark for deletion
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'DeletedImageIds';
+        input.value = imageId;
+        document.querySelector('form').appendChild(input);
+        
+        // Remove from UI
+        document.getElementById('img-' + imageId).remove();
+    }
+}
+// ===== VARIANT MANAGEMENT =====
+let variantRowIndex = 0;
+function addVariantRow() {
+    const container = document.getElementById('newVariantsContainer');
+    const template = document.getElementById('variantRowTemplate');
+    let html = template.innerHTML.replace(/INDEX/g, variantRowIndex);
+    container.insertAdjacentHTML('beforeend', html);
+    variantRowIndex++;
+}
+function removeVariantRow(btn) {
+    btn.closest('.variant-row').remove();
+}
+function deleteVariant(variantId) {
+    if (confirm('Delete this variant?')) {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'DeletedVariantIds';
+        input.value = variantId;
+        document.querySelector('form').appendChild(input);
+        
+        document.getElementById('variant-' + variantId).remove();
+    }
+}
+function toggleColorPicker(select) {
+    const row = select.closest('.variant-row');
+    const colorCol = row.querySelector('.color-picker-col');
+    colorCol.style.display = select.value === 'Color' ? 'block' : 'none';
+}
 
         function showNotification(message, type) {
             const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';

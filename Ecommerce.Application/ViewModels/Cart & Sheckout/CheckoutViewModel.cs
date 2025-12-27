@@ -51,5 +51,24 @@ namespace Ecommerce.Application.ViewModels
         public bool UseShippingAsBilling { get; set; } = true;
         
         public bool AgreeToTerms { get; set; } = false;
+        
+        // Shipping Method Selection
+        public string ShippingMethod { get; set; } = "standard";
+        
+        // Order Notes / Special Instructions
+        [MaxLength(500)]
+        public string? OrderNotes { get; set; }
+        
+        // Promo Code
+        public string? PromoCode { get; set; }
+        
+        // Applied promo code discount
+        public decimal PromoDiscount { get; set; } = 0;
+        
+        // Message about promo code status
+        public string? PromoCodeMessage { get; set; }
+        
+        // Estimated delivery date based on shipping method
+        public DateTime? EstimatedDeliveryDate { get; set; }
     }
 }

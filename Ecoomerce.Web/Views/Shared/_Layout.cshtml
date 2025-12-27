@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - ShopSmart</title>
+    <title>@ViewData["Title"] - Trendify - Ecommerce</title>
     
     <!-- Google Fonts - Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -23,7 +23,7 @@
             <div class="container">
                 <!-- Brand -->
                 <a class="navbar-brand d-flex align-items-center" asp-area="" asp-controller="Home" asp-action="Index">
-                    <span class="fw-bold">ShopSmart</span>
+                    <span class="fw-bold">Trendify - Ecommerce</span>
                 </a>
                 
                 <!-- Mobile Toggle -->
@@ -110,9 +110,10 @@
                             
                             <!-- User Menu -->
                             <div class="dropdown">
-                                <button class="btn btn-link p-2 dropdown-toggle" type="button" id="userMenuDropdown" 
+                                <button class="btn btn-link p-2 dropdown-toggle d-flex align-items-center gap-2" type="button" id="userMenuDropdown" 
                                         data-bs-toggle="dropdown" aria-expanded="false">
                                     <i class="bi bi-person-circle fs-5"></i>
+                                    <span class="d-none d-lg-inline fw-medium" style="color: var(--text-color);">@User.Identity.Name</span>
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="userMenuDropdown">
                                     @if (User.IsInRole("Admin"))

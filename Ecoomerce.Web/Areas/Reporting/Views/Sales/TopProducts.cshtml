@@ -1,0 +1,78 @@
+@model IEnumerable<Ecommerce.Application.DTOs.Reporting.TopSellingProductDto>
+@{
+    ViewData["Title"] = "Top Selling Products";
+}
+
+<partial name="_ReportingNavigation" />
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <div>
+                    <h1 class="h4 mb-0">Top Selling Products</h1>
+                    <p class="text-muted mb-0">View best-performing products by sales volume and revenue</p>
+                </div>
+            </div>
+            
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    @TempData["Error"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+            
+            <div class="card shadow-sm mb-3">
+                <div class="card-body">
+                    <form method="get" class="d-flex gap-2">
+                        <select name="count" class="form-select" style="width: auto;">
+                            <option value="10" selected="@(ViewBag.Count == 10)">Top 10</option>
+                            <option value="20" selected="@(ViewBag.Count == 20)">Top 20</option>
+                            <option value="50" selected="@(ViewBag.Count == 50)">Top 50</option>
+                        </select>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-funnel"></i> Apply
+                        </button>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="card shadow-sm">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>Product Name</th>
+                                    <th>Units Sold</th>
+                                    <th>Revenue</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model)
+                                {
+                                    <tr>
+                                        <td>@(Model.ToList().IndexOf(item) + 1)</td>
+                                        <td>@item.ProductName</td>
+                                        <td>@item.QuantitySold</td>
+                                        <td>@item.Revenue.ToString("C")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                        
+                        @if (!Model.Any())
+                        {
+                            <div class="text-center py-5">
+                                <i class="bi bi-inbox fs-1 text-muted"></i>
+                                <p class="text-muted mt-2">No top products data available.</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

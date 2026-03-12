@@ -1,0 +1,86 @@
+@model IEnumerable<Ecommerce.Application.DTOs.Reporting.InventoryLogReportDto>
+@{
+    ViewData["Title"] = "Inventory Logs";
+}
+
+<partial name="_ReportingNavigation" />
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <div>
+                    <h1 class="h4 mb-0">Inventory Logs</h1>
+                    <p class="text-muted mb-0">Track all inventory changes and stock movements</p>
+                </div>
+            </div>
+            
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    @TempData["Error"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+            
+            <div class="card shadow-sm mb-3">
+                <div class="card-body">
+                    <form method="get" class="d-flex gap-2">
+                        <input type="date" name="startDate" class="form-control" 
+                               value="@ViewBag.StartDate" placeholder="Start Date">
+                        <input type="date" name="endDate" class="form-control" 
+                               value="@ViewBag.EndDate" placeholder="End Date">
+                        <input type="number" name="productId" class="form-control" style="width: auto;"
+                               value="@ViewBag.ProductId" placeholder="Product ID" min="1">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-funnel"></i> Filter
+                        </button>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="card shadow-sm">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Product</th>
+                                    <th>Change Type</th>
+                                    <th>Quantity</th>
+                                    <th>New Stock</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model)
+                                {
+                                    <tr>
+                                        <td>@item.CreatedAt.ToString("MM/dd/yyyy HH:mm")</td>
+                                        <td>@item.ProductName</td>
+                                        <td>
+                                            <span class="badge @(item.ChangeType == "Increase" ? "bg-success" : 
+                                                               item.ChangeType == "Decrease" ? "bg-warning" : "bg-secondary")">
+                                                @item.ChangeType
+                                            </span>
+                                        </td>
+                                        <td>@item.QuantityChanged</td>
+                                        <td>@item.NewStockLevel</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                        
+                        @if (!Model.Any())
+                        {
+                            <div class="text-center py-5">
+                                <i class="bi bi-inbox fs-1 text-muted"></i>
+                                <p class="text-muted mt-2">No inventory logs available for the selected filters.</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

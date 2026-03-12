@@ -4,6 +4,8 @@ using Ecommerce.Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.AspNetCore.OutputCaching;
 
 namespace Ecoomerce.Web.Controllers
 {
@@ -16,6 +18,8 @@ namespace Ecoomerce.Web.Controllers
         private readonly ICategoryRepository _categoryRepository;
         private readonly ILogger<ProductController> _logger;
         private readonly IActivityLogService _activityLogService;
+        private readonly IMemoryCache _cache;
+        private readonly IRecommendationService _recommendationService;
 
         public ProductController(
             IProductService productService,
@@ -24,7 +28,9 @@ namespace Ecoomerce.Web.Controllers
             IWishlistService wishlistService,
             ICategoryRepository categoryRepository,
             ILogger<ProductController> logger,
-            IActivityLogService activityLogService)
+            IActivityLogService activityLogService,
+            IMemoryCache cache,
+            IRecommendationService recommendationService)
         {
             _productService = productService;
             _reviewService = reviewService;
@@ -33,11 +39,14 @@ namespace Ecoomerce.Web.Controllers
             _categoryRepository = categoryRepository;
             _logger = logger;
             _activityLogService = activityLogService;
+            _cache = cache;
+            _recommendationService = recommendationService;
         }
 
 
         // Action for the main products page (handles searching and filtering)
-        public async Task<IActionResult> Index(string? searchTerm, int? categoryId, decimal? minPrice, decimal? maxPrice, string? sortBy, int page = 1, int pageSize = 12)
+        [OutputCache(Duration = 60, VaryByQueryKeys = new[] { "searchTerm", "categoryId", "brandId", "minPrice", "maxPrice", "sortBy", "page", "pageSize" })]
+        public async Task<IActionResult> Index(string? searchTerm, int? categoryId, int? brandId, decimal? minPrice, decimal? maxPrice, string? sortBy, int page = 1, int pageSize = 12)
         {
             try 
             {
@@ -50,8 +59,13 @@ namespace Ecoomerce.Web.Controllers
                     _ => 12
                 };
 
-                // Fetch categories for filter dropdown
-                var categories = await _categoryRepository.ListAllAsync();
+                // Fetch categories for filter dropdown with caching (10 minutes)
+                var categories = await _cache.GetOrCreateAsync("all_categories", async entry =>
+                {
+                    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+                    return await _categoryRepository.ListAllAsync();
+                });
+                
                 var categoryList = categories.Select(c => new SelectListItem
                 {
                     Value = c.CategoryID.ToString(),
@@ -59,34 +73,15 @@ namespace Ecoomerce.Web.Controllers
                     Selected = c.CategoryID == categoryId
                 }).ToList();
 
-                var products = await _productService.SearchProductAsync(searchTerm, categoryId);
-                
-                // Apply price filtering if specified
-                if (minPrice.HasValue)
-                    products = products.Where(p => p.Price >= minPrice.Value);
-                
-                if (maxPrice.HasValue)
-                    products = products.Where(p => p.Price <= maxPrice.Value);
+                // Use server-side paginated search - ALL filtering/sorting/paging done in SQL
+                var (products, totalCount) = await _productService.SearchPagedAsync(
+                    searchTerm, categoryId, brandId, minPrice, maxPrice, sortBy, page, pageSize);
 
-                // Apply sorting
-                products = sortBy?.ToLower() switch
-                {
-                    "price_asc" => products.OrderBy(p => p.Price),
-                    "price_desc" => products.OrderByDescending(p => p.Price),
-                    "name_asc" => products.OrderBy(p => p.Name),
-                    "name_desc" => products.OrderByDescending(p => p.Name),
-                    "rating" => products.OrderByDescending(p => p.AverageRating),
-                    _ => products.OrderBy(p => p.Name)
-                };
-
-                // Pagination
-                var totalProducts = products.Count();
-                var totalPages = (int)Math.Ceiling(totalProducts / (double)pageSize);
-                var paginatedProducts = products.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+                var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
 
                 var viewModel = new ProductSearchViewModel
                 {
-                    Products = paginatedProducts,
+                    Products = products.ToList(),
                     Categories = categoryList,
                     SearchTerm = searchTerm,
                     CategoryId = categoryId,
@@ -96,7 +91,7 @@ namespace Ecoomerce.Web.Controllers
                     CurrentPage = page,
                     PageSize = pageSize,
                     TotalPages = totalPages,
-                    TotalCount = totalProducts
+                    TotalCount = totalCount
                 };
                 
                 return View(viewModel);
@@ -120,11 +115,11 @@ namespace Ecoomerce.Web.Controllers
 
             try
             {
-                var allProducts = await _productService.GetAllProductsAsync();
-                var suggestions = allProducts
-                    .Where(p => p.Name.Contains(query, StringComparison.OrdinalIgnoreCase) ||
-                               (p.Description != null && p.Description.Contains(query, StringComparison.OrdinalIgnoreCase)))
-                    .Take(8)
+                // Use server-side search with limit 8
+                var (products, _) = await _productService.SearchPagedAsync(
+                    query, null, null, null, null, null, 1, 8);
+                    
+                var suggestions = products
                     .Select(p => new
                     {
                         productId = p.ProductID,
@@ -162,13 +157,15 @@ namespace Ecoomerce.Web.Controllers
                 // Track recently viewed products
                 AddToRecentlyViewed(id);
 
-                // Get recommended products (same category - using a simple approach for now)
-                var allProducts = await _productService.GetAllProductsAsync();
-                var recommendedProducts = allProducts.Where(p => p.CategoryName == product.CategoryName && p.ProductID != id).Take(4).ToList();
+                // Get recommended products (related products)
+                var recommendedProducts = (await _recommendationService.GetRelatedProductsAsync(id, 6))
+                    .Where(p => p.ProductID != id).Take(4).ToList();
 
-                // Get recently viewed products
-                var recentlyViewedIds = GetRecentlyViewedIds().Where(rvId => rvId != id).Take(4);
-                var recentlyViewedProducts = allProducts.Where(p => recentlyViewedIds.Contains(p.ProductID)).ToList();
+                // Get recently viewed products (using batch fetch)
+                var recentlyViewedIds = GetRecentlyViewedIds().Where(rvId => rvId != id).Take(4).ToList();
+                var recentlyViewedProductsList = recentlyViewedIds.Any() 
+                    ? (await _productService.GetByIdsAsync(recentlyViewedIds)).ToList()
+                    : new List<Ecommerce.Application.DTOs.Products.ProductDto>();
 
                 // Check if product is in wishlist (only for authenticated users)
                 bool isInWishlist = false;
@@ -185,7 +182,7 @@ namespace Ecoomerce.Web.Controllers
                 {
                     Product = product,
                     RecommendedProducts = recommendedProducts,
-                    RecentlyViewedProducts = recentlyViewedProducts,
+                    RecentlyViewedProducts = recentlyViewedProductsList,
                     IsInWishlist = isInWishlist
                 };
 
@@ -471,8 +468,8 @@ namespace Ecoomerce.Web.Controllers
             try
             {
                 _logger.LogInformation("Fetching {Count} latest products", count);
-                var products = await _productService.GetAllProductsAsync();
-                var latestProducts = products.OrderByDescending(p => p.CreatedAt).Take(count).ToList();
+                // Use server-side method to get latest products
+                var latestProducts = await _productService.GetLatestProductsAsync(count);
                 return View(latestProducts);
             }
             catch (Exception ex)
@@ -490,11 +487,8 @@ namespace Ecoomerce.Web.Controllers
             try
             {
                 _logger.LogInformation("Fetching {Count} products on sale", count);
-                var products = await _productService.GetAllProductsAsync();
-                var saleProducts = products.Where(p => p.DiscountPercentage > 0 && p.IsAvailable)
-                                           .OrderByDescending(p => p.DiscountPercentage)
-                                           .Take(count)
-                                           .ToList();
+                // Use server-side method to get products on sale
+                var saleProducts = await _productService.GetOnSaleProductsAsync(count);
                 return View(saleProducts);
             }
             catch (Exception ex)

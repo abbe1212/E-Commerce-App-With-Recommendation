@@ -1,12 +1,14 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Ecoomerce.Web.Controllers
 {
+    [Authorize]
     public class WishlistController : Controller
     {
         public IActionResult Index()
         {
-            return View();
+            return RedirectToAction("Index", "Wishlist", new { area = "Profile" });
         }
     }
 }

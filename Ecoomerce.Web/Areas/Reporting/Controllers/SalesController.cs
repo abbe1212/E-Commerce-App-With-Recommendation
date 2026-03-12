@@ -1,9 +1,11 @@
 using Ecommerce.Application.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Ecoomerce.Web.Areas.Reporting.Controllers
 {
     [Area("Reporting")]
+    [Authorize(Roles = "Admin")]
     public class SalesController : Controller
     {
         private readonly ISalesReportService _salesReportService;

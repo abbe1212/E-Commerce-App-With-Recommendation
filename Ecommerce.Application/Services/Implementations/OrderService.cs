@@ -1,10 +1,10 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Ecommerce.Application.DTOs.Order;
 using Ecommerce.Application.Services.Interfaces;
 using Ecommerce.Core.Entities;
 using Ecommerce.Core.Enums;
 using Ecommerce.Core.Interfaces;
-using Ecommerce.Infrastructure.Repositories;
+using Microsoft.Extensions.Logging;
 
 namespace Ecommerce.Application.Services.Implementations
 {
@@ -15,19 +15,22 @@ namespace Ecommerce.Application.Services.Implementations
             private readonly ICartRepository _cartRepository;
             private readonly IProductRepository _productRepository; 
             private readonly IMapper _mapper;
+            private readonly ILogger<OrderService> _logger;
 
             public OrderService(
                 IUnitOfWork unitOfWork,
                 IOrderRepository orderRepository,
                 ICartRepository cartRepository,
                 IProductRepository productRepository, 
-                IMapper mapper)
+                IMapper mapper,
+                ILogger<OrderService> logger)
             {
                 _unitOfWork = unitOfWork;
                 _orderRepository = orderRepository;
                 _cartRepository = cartRepository;
                 _productRepository = productRepository; 
                 _mapper = mapper;
+                _logger = logger;
             }
 
             // Done
@@ -41,13 +44,18 @@ namespace Ecommerce.Application.Services.Implementations
                     {
                         order.Status = OrderStatus.cancelled;
 
+                        // Fetch ALL products for the order in one WHERE IN query (batch fetch to avoid N+1)
+                        var productIds = order.OrderItems.Select(i => i.ProductID).Distinct().ToList();
+                        var products = (await _productRepository.GetByIdsAsync(productIds))
+                            .ToDictionary(p => p.ProductID);
+
+                        // Restore stock (in-memory, zero DB hits)
                         foreach (var item in order.OrderItems)
                         {
-                            var productToUpdate = await _productRepository.GetByIdAsync(item.ProductID);
-                            if (productToUpdate != null)
+                            if (products.TryGetValue(item.ProductID, out var product))
                             {
-                                productToUpdate.StockQuantity += item.Quantity;
-                                await _productRepository.UpdateAsync(productToUpdate);
+                                product.StockQuantity += item.Quantity;
+                                await _productRepository.UpdateAsync(product);
                             }
                         }
 
@@ -76,10 +84,16 @@ namespace Ecommerce.Application.Services.Implementations
                 decimal subTotal = 0;
                 var orderItems = new List<OrderItem>();
 
+                // Fetch ALL products for the cart in one WHERE IN query (batch fetch to avoid N+1)
+                var productIds = cart.Items.Select(i => i.ProductID).Distinct().ToList();
+                var products = (await _productRepository.GetByIdsAsync(productIds))
+                    .ToDictionary(p => p.ProductID);
+
+                // Loop 1 - Validate stock (in-memory, zero DB hits)
                 foreach (var cartItem in cart.Items)
                 {
-                    var product = await _productRepository.GetByIdAsync(cartItem.ProductID);
-                    if (product == null || product.StockQuantity < cartItem.Quantity)
+                    if (!products.TryGetValue(cartItem.ProductID, out var product) 
+                        || product.StockQuantity < cartItem.Quantity)
                     {
                         throw new InvalidOperationException($"Product '{product?.Name ?? "ID: " + cartItem.ProductID}' is out of stock or insufficient quantity.");
                     }
@@ -133,15 +147,12 @@ namespace Ecommerce.Application.Services.Implementations
                 await _orderRepository.AddAsync(order);
                 await _unitOfWork.SaveChangesAsync(); // ضروري للحصول على OrderID
 
-                // تحديث المخزون بعد إنشاء الطلب بنجاح
+                // Loop 2 - Decrement stock (in-memory, zero DB hits)
                 foreach (var item in order.OrderItems)
                 {
-                    var productToUpdate = await _productRepository.GetByIdAsync(item.ProductID);
-                    if (productToUpdate != null)
-                    {
-                        productToUpdate.StockQuantity -= item.Quantity;
-                        await _productRepository.UpdateAsync(productToUpdate);
-                    }
+                    var product = products[item.ProductID];
+                    product.StockQuantity -= item.Quantity;
+                    await _productRepository.UpdateAsync(product);
                 }
 
                 // مسح عربة التسوق
@@ -184,16 +195,32 @@ namespace Ecommerce.Application.Services.Implementations
             return _mapper.Map<IEnumerable<OrderDto>>(orders);
         }
 
-        // Done
-        public async Task UpdateOrderStatusAsync(int orderId, OrderStatus newStatus)
-        {
-            var order = await _orderRepository.GetByIdAsync(orderId);
-            if (order != null)
-            {
-                order.Status = newStatus;
-                await _orderRepository.UpdateAsync(order);
-                await _unitOfWork.SaveChangesAsync();
-            }
-        }
-    }
-}
+         // Done
+         public async Task UpdateOrderStatusAsync(int orderId, OrderStatus newStatus)
+         {
+             var order = await _orderRepository.GetByIdAsync(orderId);
+             if (order != null)
+             {
+                 order.Status = newStatus;
+                 await _orderRepository.UpdateAsync(order);
+                 await _unitOfWork.SaveChangesAsync();
+             }
+         }
+
+         public async Task ConfirmPaymentByIntentIdAsync(string paymentIntentId)
+         {
+             var orders = await _orderRepository.ListAllAsync();
+             var order = orders.FirstOrDefault(o => o.PaymentIntentId == paymentIntentId);
+
+             if (order == null)
+             {
+                 _logger.LogWarning($"Stripe webhook received for PaymentIntentId {paymentIntentId} but no matching order found");
+                 return;
+             }
+
+             order.Status = OrderStatus.processing;
+             await _orderRepository.UpdateAsync(order);
+             await _unitOfWork.SaveChangesAsync();
+         }
+     }
+ }

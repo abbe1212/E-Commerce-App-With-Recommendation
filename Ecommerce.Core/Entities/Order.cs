@@ -35,6 +35,10 @@ namespace Ecommerce.Core.Entities
         [MaxLength(500)]
         public string? OrderNotes { get; set; }
 
+        // Stripe Payment Intent ID for Stripe payment tracking
+        [MaxLength(255)]
+        public string? PaymentIntentId { get; set; }
+
         public virtual Payment Payment { get; set; }
         public virtual Shipping Shipping { get; set; }
         public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();

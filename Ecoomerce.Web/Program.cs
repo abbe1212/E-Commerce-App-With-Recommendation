@@ -17,11 +17,15 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 
+// Caching Services
+builder.Services.AddMemoryCache();
+builder.Services.AddOutputCache();
+
 // AutoMapper Registration
 builder.Services.AddAutoMapper(typeof(MappingProfile).Assembly);
 
-// Database
-builder.Services.AddDbContext<AppDbContext>(options =>
+// Database - Using DbContextPool for better performance
+builder.Services.AddDbContextPool<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Identity
@@ -129,26 +133,47 @@ else
 }
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+
+// Raw Body Middleware for Stripe Webhook
+app.Use(async (context, next) =>
+{
+    if (context.Request.Path.StartsWithSegments("/Payment/Webhook"))
+    {
+        context.Request.EnableBuffering();
+        var body = await new System.IO.StreamReader(context.Request.Body).ReadToEndAsync();
+        context.Request.Body.Position = 0;
+        context.Items["RawBody"] = body;
+    }
+    await next();
+});
+
 app.UseRouting();
+
+app.UseOutputCache();
 
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Area Routes ProfileArea
-app.MapControllerRoute(
-    name: "ProfileArea",
-    pattern: "{area:exists}/{controller=Dashboard}/{action=Index}/{id?}");
-
-// Area Routes ReportingArea
-app.MapControllerRoute(
-    name: "ReportingArea",
-    pattern: "{area:exists}/{controller=Dashboard}/{action=Index}/{id?}");
-
-
-// Area Routes AdminArea
+// Area Routes - AdminArea
 app.MapControllerRoute(
     name: "AdminArea",
-    pattern: "{area:exists}/{controller=Dashboard}/{action=Index}/{id?}");
+    pattern: "Admin/{controller=Dashboard}/{action=Index}/{id?}",
+    defaults: new { area = "Admin" },
+    constraints: new { area = "Admin" });
+
+// Area Routes - ReportingArea
+app.MapControllerRoute(
+    name: "ReportingArea",
+    pattern: "Reporting/{controller=Dashboard}/{action=Index}/{id?}",
+    defaults: new { area = "Reporting" },
+    constraints: new { area = "Reporting" });
+
+// Area Routes - ProfileArea
+app.MapControllerRoute(
+    name: "ProfileArea",
+    pattern: "Profile/{controller=Account}/{action=Index}/{id?}",
+    defaults: new { area = "Profile" },
+    constraints: new { area = "Profile" });
 
 // Routes
 app.MapControllerRoute(

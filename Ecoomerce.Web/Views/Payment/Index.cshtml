@@ -1,0 +1,27 @@
+@{
+    ViewData["Title"] = "Payment";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-body">
+                    <h2 class="card-title mb-4">Complete Your Payment</h2>
+                    <p class="text-muted">Order #@ViewBag.OrderId</p>
+                    <p class="fs-4 fw-bold">Total: @ViewBag.TotalAmount.ToString("C")</p>
+                    
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        Stripe payment integration is configured. Use Stripe Checkout or Elements to complete payment.
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <a href="#" class="btn btn-primary btn-lg">Pay with Stripe</a>
+                        <a asp-action="Cancel" asp-route-orderId="@ViewBag.OrderId" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,42 @@
+            if (recentlyViewed.Count > 20)
+        private readonly ILogger<ProductController> _logger;
+            ILogger<ProductController> logger,
+        public async Task<IActionResult> Index(string? searchTerm, int? categoryId, int? brandId, decimal? minPrice, decimal? maxPrice, string? sortBy, int page = 1, int pageSize = 12)
+                    12 or 24 or 48 => pageSize,
+                    _ => 12
+                var categories = await _cache.GetOrCreateAsync("all_categories", async entry =>
+                var categoryList = categories.Select(c => new SelectListItem
+                var (products, totalCount) = await _productService.SearchPagedAsync(
+                var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+                    TotalCount = totalCount
+        public async Task<IActionResult> SearchSuggestions(string query)
+                    .Select(p => new
+        public async Task<IActionResult> Details(int id)
+                    .Where(p => p.ProductID != id).Take(4).ToList();
+                var recentlyViewedIds = GetRecentlyViewedIds().Where(rvId => rvId != id).Take(4).ToList();
+                    : new List<Ecommerce.Application.DTOs.Products.ProductDto>();
+            if (recentlyViewed.Count > 20)
+        private IEnumerable<int> GetRecentlyViewedIds()
+                return Enumerable.Empty<int>();
+                .Where(s => int.TryParse(s, out _))
+        public async Task<IActionResult> Category(int categoryId, int page = 1)
+                var totalProducts = products.Count();
+        public async Task<IActionResult> QuickSearch(string term)
+                var results = products.Take(5).Select(p => new
+        public async Task<IActionResult> AddToCart(int productId, int quantity = 1)
+        public async Task<IActionResult> ToggleWishlist(int productId)
+        public async Task<IActionResult> CheckWishlist(int productId)
+        public async Task<IActionResult> Featured(int count = 12)
+                _logger.LogInformation("Fetching {Count} featured products", count);
+        public async Task<IActionResult> TopSelling(int count = 12)
+                _logger.LogInformation("Fetching {Count} top selling products", count);
+        public async Task<IActionResult> Latest(int count = 12)
+                _logger.LogInformation("Fetching {Count} latest products", count);
+        public async Task<IActionResult> OnSale(int count = 24)
+                _logger.LogInformation("Fetching {Count} products on sale", count);
+        public async Task<IActionResult> GetFeaturedProducts(int count = 8)
+        public async Task<IActionResult> GetTopSellingProducts(int count = 8)
+        public async Task<IActionResult> Compare(int[] productIds)
+                if (productIds.Length > 4)
+                var products = new List<Ecommerce.Application.DTOs.Products.ProductDto>();
+                if (products.Count < 2)

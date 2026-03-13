@@ -207,13 +207,18 @@ namespace Ecoomerce.Web.Controllers
             // Add to beginning
             recentlyViewed.Insert(0, productId);
             
-            // Keep only last 10
-            if (recentlyViewed.Count > 10)
-                recentlyViewed = recentlyViewed.Take(10).ToList();
+            // Keep only last 20
+            if (recentlyViewed.Count > 20)
+                recentlyViewed = recentlyViewed.Take(20).ToList();
             
             // Store in cookie
             Response.Cookies.Append("RecentlyViewed", string.Join(",", recentlyViewed), 
-                new CookieOptions { Expires = DateTimeOffset.UtcNow.AddDays(30) });
+                new CookieOptions 
+                { 
+                    Expires = DateTimeOffset.UtcNow.AddDays(30),
+                    HttpOnly = true,
+                    SameSite = SameSiteMode.Strict
+                });
         }
 
         // Helper method to get recently viewed product IDs

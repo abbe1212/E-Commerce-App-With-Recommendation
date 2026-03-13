@@ -55,17 +55,8 @@ namespace Ecoomerce.Web.Controllers
 
                 var cart = await _cartService.GetOrCreateCartAsync(userId);
 
-                // Populate product details for each cart item
-                foreach (var item in cart.Items)
-                {
-                    var product = await _productService.GetProductByIdAsync(item.ProductID);
-                    if (product != null)
-                    {
-                        item.ProductName = product.Name;
-                        item.ImageURL = product.ImageURL;
-                        item.UnitPrice = product.Price;
-                    }
-                }
+                // Product details are already populated via AutoMapper from eager-loaded navigation properties
+                // No need for N+1 queries here - removed the foreach loop
 
                 var viewModel = new CheckoutViewModel
                 {
@@ -111,17 +102,8 @@ namespace Ecoomerce.Web.Controllers
                     return RedirectToAction("Index", "Cart");
                 }
 
-                // Populate product details for each cart item
-                foreach (var item in cart.Items)
-                {
-                    var product = await _productService.GetProductByIdAsync(item.ProductID);
-                    if (product != null)
-                    {
-                        item.ProductName = product.Name;
-                        item.ImageURL = product.ImageURL;
-                        item.UnitPrice = product.Price;
-                    }
-                }
+                // Product details are already populated via AutoMapper from eager-loaded navigation properties
+                // No need for N+1 queries here - removed the foreach loop
 
                 // Store cart info in TempData
                 TempData["CartItems"] = System.Text.Json.JsonSerializer.Serialize(cart.Items);
@@ -189,32 +171,7 @@ namespace Ecoomerce.Web.Controllers
             }
 
             // Restore cart info from TempData
-            if (TempData["CartItems"] != null)
-            {
-                model.Cart.Items = JsonSerializer.Deserialize<List<CartItemDto>>(TempData["CartItems"].ToString());
-                TempData.Keep("CartItems");
-            }
-
-            // SubTotal is a calculated property
-            TempData.Keep("CartSubTotal");
-
-            if (TempData["CartTax"] != null)
-            {
-                model.Cart.Tax = Convert.ToDecimal(TempData["CartTax"]);
-                TempData.Keep("CartTax");
-            }
-
-            if (TempData["CartShipping"] != null)
-            {
-                model.Cart.Shipping = Convert.ToDecimal(TempData["CartShipping"]);
-                TempData.Keep("CartShipping");
-            }
-
-            if (TempData["CartDiscount"] != null)
-            {
-                model.Cart.Discount = Convert.ToDecimal(TempData["CartDiscount"]);
-                TempData.Keep("CartDiscount");
-            }
+            model.Cart = RestoreCartFromTempData();
             
             // Store shipping method
             TempData["ShippingMethod"] = model.ShippingMethod;
@@ -266,32 +223,7 @@ namespace Ecoomerce.Web.Controllers
             }
 
             // Restore cart info from TempData
-            if (TempData["CartItems"] != null)
-            {
-                model.Cart.Items = JsonSerializer.Deserialize<List<CartItemDto>>(TempData["CartItems"].ToString());
-                TempData.Keep("CartItems");
-            }
-
-            // SubTotal is a calculated property
-            TempData.Keep("CartSubTotal");
-
-            if (TempData["CartTax"] != null)
-            {
-                model.Cart.Tax = Convert.ToDecimal(TempData["CartTax"]);
-                TempData.Keep("CartTax");
-            }
-
-            if (TempData["CartShipping"] != null)
-            {
-                model.Cart.Shipping = Convert.ToDecimal(TempData["CartShipping"]);
-                TempData.Keep("CartShipping");
-            }
-
-            if (TempData["CartDiscount"] != null)
-            {
-                model.Cart.Discount = Convert.ToDecimal(TempData["CartDiscount"]);
-                TempData.Keep("CartDiscount");
-            }
+            model.Cart = RestoreCartFromTempData();
 
             // Keep TempData for the next request
             TempData.Keep();
@@ -328,8 +260,7 @@ namespace Ecoomerce.Web.Controllers
                 var orderNotes = TempData["OrderNotes"]?.ToString() ?? "";
                 var promoCode = TempData["PromoCode"]?.ToString();
                 
-                // Calculate shipping cost based on method (secure server-side calculation)
-                decimal shippingCost = shippingMethod.ToLower() == "express" ? 150 : (shippingMethod.ToLower() == "free" ? 0 : 50);
+                var shippingCost = _shippingService.CalculateShippingCost(shippingMethod);
                 
                 // Get discount amount
                 decimal discountAmount = 0;
@@ -387,7 +318,7 @@ namespace Ecoomerce.Web.Controllers
             }
         }
 
-        // Step 6: Order Complete
+// Step 6: Order Complete
         public async Task<IActionResult> OrderComplete(int id)
         {
             try
@@ -405,7 +336,11 @@ namespace Ecoomerce.Web.Controllers
                     return NotFound();
                 }
 
-                // Return the DTO directly - the view uses OrderDetailsViewModel which matches the structure
+                if (orderDetails.UserID != userId)
+                {
+                    return Forbid();
+                }
+
                 return View(orderDetails);
             }
             catch (Exception ex)
@@ -541,6 +476,48 @@ namespace Ecoomerce.Web.Controllers
                 _logger.LogError(ex, "Error updating shipping method");
                 return Json(new { success = false, message = "Failed to update shipping method." });
             }
+        }
+
+        // Helper method to restore cart from TempData
+        private CartViewModel RestoreCartFromTempData()
+        {
+            var cart = new CartViewModel();
+
+            // Restore cart items
+            if (TempData["CartItems"] != null)
+            {
+                var cartItemsJson = TempData["CartItems"]?.ToString();
+                cart.Items = !string.IsNullOrEmpty(cartItemsJson)
+                    ? JsonSerializer.Deserialize<List<CartItemDto>>(cartItemsJson)
+                    : new List<CartItemDto>();
+                TempData.Keep("CartItems");
+            }
+
+            // SubTotal is a calculated property
+            TempData.Keep("CartSubTotal");
+
+            // Restore Tax
+            if (TempData["CartTax"] != null)
+            {
+                cart.Tax = Convert.ToDecimal(TempData["CartTax"]);
+                TempData.Keep("CartTax");
+            }
+
+            // Restore Shipping
+            if (TempData["CartShipping"] != null)
+            {
+                cart.Shipping = Convert.ToDecimal(TempData["CartShipping"]);
+                TempData.Keep("CartShipping");
+            }
+
+            // Restore Discount
+            if (TempData["CartDiscount"] != null)
+            {
+                cart.Discount = Convert.ToDecimal(TempData["CartDiscount"]);
+                TempData.Keep("CartDiscount");
+            }
+
+            return cart;
         }
     }
 

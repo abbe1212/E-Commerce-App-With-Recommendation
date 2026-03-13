@@ -79,6 +79,10 @@ namespace Ecommerce.Application.Services.Implementations
                 // If payment intent created successfully, save payment record
                 if (paymentIntent != null)
                 {
+                    // CRITICAL: Assign PaymentIntentId to Order for webhook matching
+                    order.PaymentIntentId = paymentIntent.Id;
+                    await _orderRepository.UpdateAsync(order);
+
                     var payment = new Core.Entities.Payment
                     {
                         OrderID = paymentRequest.OrderID,
@@ -150,7 +154,7 @@ namespace Ecommerce.Application.Services.Implementations
                         var order = await _orderRepository.GetByIdAsync(payment.OrderID);
                         if (order != null)
                         {
-                            order.Status = Core.Enums.OrderStatus.pending;
+                            order.Status = Core.Enums.OrderStatus.processing;
                             await _orderRepository.UpdateAsync(order);
                         }
 
@@ -203,7 +207,7 @@ namespace Ecommerce.Application.Services.Implementations
             var order = await _orderRepository.GetByIdAsync(paymentRequest.OrderID);
             if (order != null)
             {
-                order.Status = Core.Enums.OrderStatus.pending;
+                order.Status = Core.Enums.OrderStatus.processing;
                 await _orderRepository.UpdateAsync(order);
             }
 

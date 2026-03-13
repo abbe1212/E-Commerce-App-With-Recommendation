@@ -1,0 +1,12 @@
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  Ecommerce.Core -> C:\Users\DUBAI\source\repos\ECommerceApp\Ecommerce.Core\bin\Debug\net8.0\Ecommerce.Core.dll
+  Ecommerce.Application -> C:\Users\DUBAI\source\repos\ECommerceApp\Ecommerce.Application\bin\Debug\net8.0\Ecommerce.Application.dll
+  Ecommerce.Infrastructure -> C:\Users\DUBAI\source\repos\ECommerceApp\Ecommerce.Infrastracture\bin\Debug\net8.0\Ecommerce.Infrastructure.dll
+  Ecoomerce.Web -> C:\Users\DUBAI\source\repos\ECommerceApp\Ecoomerce.Web\bin\Debug\net8.0\Ecoomerce.Web.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:13.79

@@ -1,0 +1,44 @@
+{
+  "Smtp": {
+    "Host": "smtp.gmail.com",
+    "Port": 587,
+    "EnableSsl": true,
+    "Username": "your-email@gmail.com",
+    "Password": "your-app-specific-password-here"
+  },
+  "Stripe": {
+    "PublishableKey": "pk_test_YOUR_STRIPE_PUBLISHABLE_KEY_HERE",
+    "SecretKey": "sk_test_YOUR_STRIPE_SECRET_KEY_HERE",
+    "WebhookSecret": "whsec_YOUR_WEBHOOK_SECRET_HERE"
+  },
+  "PayPal": {
+    "ClientId": "YOUR_PAYPAL_CLIENT_ID_HERE",
+    "ClientSecret": "YOUR_PAYPAL_CLIENT_SECRET_HERE",
+    "Mode": "sandbox"
+  },
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=(localdb)\\MSSQLLocalDB;Database=EcommerceAppDB;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True;"
+  },
+  "Authentication": {
+   "Google": {
+      "ClientId": "YOUR_GOOGLE_CLIENT_ID_HERE.apps.googleusercontent.com",
+      "ClientSecret": "YOUR_GOOGLE_CLIENT_SECRET_HERE"
+    },
+    "Facebook": {
+      "AppId": "your-facebook-app-id",
+      "AppSecret": "your-facebook-app-secret"
+    },
+    "Apple": {
+      "ClientId": "your-apple-service-id",
+      "KeyId": "your-apple-key-id",
+      "TeamId": "your-apple-team-id"
+    }
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*"
+}

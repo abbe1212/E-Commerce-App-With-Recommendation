@@ -420,7 +420,7 @@ Wave FINAL (After ALL tasks — parallel review):
 
 ---
 
-- [ ] 5. Write `RegisterDtoValidator` and remove data annotations from `RegisterDto`
+- [x] 5. Write `RegisterDtoValidator` and remove data annotations from `RegisterDto`
 
   **What to do**:
   - Create file: `Ecommerce.Application/Validators/RegisterDtoValidator.cs`
@@ -500,7 +500,7 @@ Wave FINAL (After ALL tasks — parallel review):
 
 ---
 
-- [ ] 6. Write `CreateProductDtoValidator`
+- [x] 6. Write `CreateProductDtoValidator`
 
   **What to do**:
   - Create file: `Ecommerce.Application/Validators/CreateProductDtoValidator.cs`
@@ -556,7 +556,7 @@ Wave FINAL (After ALL tasks — parallel review):
 
 ---
 
-- [ ] 7. Write `CheckoutViewModelValidator`
+- [x] 7. Write `CheckoutViewModelValidator`
 
   **What to do**:
   - Create file: `Ecommerce.Application/Validators/CheckoutViewModelValidator.cs`
@@ -617,7 +617,7 @@ Wave FINAL (After ALL tasks — parallel review):
 
 ---
 
-- [ ] 8. Write `PromoCodeRequestValidator` in the Web layer
+- [x] 8. Write `PromoCodeRequestValidator` in the Web layer
 
   **What to do**:
   - Create directory: `Ecoomerce.Web/Validators/`
@@ -677,7 +677,7 @@ Wave FINAL (After ALL tasks — parallel review):
 
 ---
 
-- [ ] 9. Add OAuth startup bootstrap logger to `Program.cs`
+- [x] 9. Add OAuth startup bootstrap logger to `Program.cs`
 
   **What to do**:
   - Open `Ecoomerce.Web/Program.cs`
@@ -738,7 +738,7 @@ Wave FINAL (After ALL tasks — parallel review):
 
 ---
 
-- [ ] 10. Write `OrderServiceTests` (4 tests)
+- [x] 10. Write `OrderServiceTests` (4 tests)
 
   **What to do**:
   - Create file: `Ecommerce.Tests/Services/OrderServiceTests.cs`
@@ -819,7 +819,7 @@ Wave FINAL (After ALL tasks — parallel review):
 
 ---
 
-- [ ] 11. Write `CartServiceTests` (7 tests)
+- [x] 11. Write `CartServiceTests` (7 tests)
 
   **What to do**:
   - Create file: `Ecommerce.Tests/Services/CartServiceTests.cs`
@@ -893,7 +893,7 @@ Wave FINAL (After ALL tasks — parallel review):
 
 ---
 
-- [ ] 12. Write `PromoCodeServiceTests` (5 tests)
+- [x] 12. Write `PromoCodeServiceTests` (5 tests)
 
   **What to do**:
   - Create file: `Ecommerce.Tests/Services/PromoCodeServiceTests.cs`

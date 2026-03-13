@@ -110,14 +110,26 @@ builder.Services.AddAuthentication()
         options.AppId = builder.Configuration["Authentication:Facebook:AppId"] ?? "";
         options.AppSecret = builder.Configuration["Authentication:Facebook:AppSecret"] ?? "";
     });
-    // Note: Apple Sign-In requires AspNet.Security.OAuth.Apple package
-    // Uncomment when ready to implement:
-    // .AddApple(options =>
-    // {
-    //     options.ClientId = builder.Configuration["Authentication:Apple:ClientId"] ?? "";
-    //     options.KeyId = builder.Configuration["Authentication:Apple:KeyId"] ?? "";
-    //     options.TeamId = builder.Configuration["Authentication:Apple:TeamId"] ?? "";
-    // });
+     // Note: Apple Sign-In requires AspNet.Security.OAuth.Apple package
+     // Uncomment when ready to implement:
+     // .AddApple(options =>
+     // {
+     //     options.ClientId = builder.Configuration["Authentication:Apple:ClientId"] ?? "";
+     //     options.KeyId = builder.Configuration["Authentication:Apple:KeyId"] ?? "";
+     //     options.TeamId = builder.Configuration["Authentication:Apple:TeamId"] ?? "";
+     // });
+
+// Startup validation — warn if OAuth secrets are missing
+using var startupLoggerFactory = LoggerFactory.Create(logging => logging.AddConsole());
+var startupLogger = startupLoggerFactory.CreateLogger("Startup");
+
+var googleClientId = builder.Configuration["Authentication:Google:ClientId"];
+var facebookAppId = builder.Configuration["Authentication:Facebook:AppId"];
+
+if (string.IsNullOrWhiteSpace(googleClientId))
+    startupLogger.LogWarning("Authentication:Google:ClientId is empty. Google OAuth will not work.");
+if (string.IsNullOrWhiteSpace(facebookAppId))
+    startupLogger.LogWarning("Authentication:Facebook:AppId is empty. Facebook OAuth will not work.");
 
 var app = builder.Build();
 

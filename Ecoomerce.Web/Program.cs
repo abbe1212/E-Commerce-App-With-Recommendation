@@ -6,6 +6,8 @@ using Ecommerce.Core.Interfaces;
 using Ecommerce.Infrastructure.Data;
 using Ecommerce.Infrastructure.Repositories;
 using Ecommerce.Infrastructure.Services;
+using FluentValidation;
+using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using AuthenticationService = Ecommerce.Application.Services.Implementations.AuthenticationService;
@@ -16,6 +18,12 @@ var builder = WebApplication.CreateBuilder(args);
 // MVC + Razor Pages
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
+
+// FluentValidation
+builder.Services.AddFluentValidationAutoValidation();
+builder.Services.AddValidatorsFromAssemblyContaining<Ecommerce.Application.Validators.CreateProductDtoValidator>();
+// Register Web-layer validators (not in Application assembly)
+builder.Services.AddScoped<IValidator<Ecoomerce.Web.Controllers.CheckoutController.PromoCodeRequest>, Ecoomerce.Web.Validators.PromoCodeRequestValidator>();
 
 // Caching Services
 builder.Services.AddMemoryCache();

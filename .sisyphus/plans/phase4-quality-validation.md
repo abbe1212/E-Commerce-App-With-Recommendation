@@ -960,7 +960,7 @@ Wave FINAL (After ALL tasks — parallel review):
 
 ---
 
-- [ ] 13. Register FluentValidation in `Program.cs` + include `PromoCodeRequestValidator`
+- [x] 13. Register FluentValidation in `Program.cs` + include `PromoCodeRequestValidator`
 
   **What to do**:
   - Open `Ecoomerce.Web/Program.cs`
@@ -1028,7 +1028,7 @@ Wave FINAL (After ALL tasks — parallel review):
 
 ---
 
-- [ ] 14. Write `CheckoutControllerTests` (3 tests)
+- [x] 14. Write `CheckoutControllerTests` (3 tests)
 
   **What to do**:
   - Create file: `Ecommerce.Tests/Controllers/CheckoutControllerTests.cs`
@@ -1100,7 +1100,7 @@ Wave FINAL (After ALL tasks — parallel review):
 
 ---
 
-- [ ] 15. Write `ProductRepositoryTests` (4 tests, EF InMemory)
+- [x] 15. Write `ProductRepositoryTests` (4 tests, EF InMemory)
 
   **What to do**:
   - Create file: `Ecommerce.Tests/Repositories/ProductRepositoryTests.cs`

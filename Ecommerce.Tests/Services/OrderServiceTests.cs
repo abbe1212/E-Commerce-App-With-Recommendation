@@ -41,7 +41,7 @@ namespace Ecommerce.Tests.Services
 
             mockCartRepo.Setup(r => r.GetCartByUserIdAsync("user1")).ReturnsAsync(cart);
             mockProductRepo.Setup(r => r.GetByIdsAsync(It.IsAny<List<int>>())).ReturnsAsync(products);
-            mockOrderRepo.Setup(r => r.AddAsync(It.IsAny<Order>())).Returns(Task.CompletedTask);
+            mockOrderRepo.Setup(r => r.AddAsync(It.IsAny<Order>())).ReturnsAsync((Order o) => o);
             mockUnitOfWork.Setup(u => u.SaveChangesAsync()).ReturnsAsync(1);
             mockUnitOfWork.Setup(u => u.BeginTransactionAsync()).Returns(Task.CompletedTask);
             mockUnitOfWork.Setup(u => u.CommitTransactionAsync()).Returns(Task.CompletedTask);

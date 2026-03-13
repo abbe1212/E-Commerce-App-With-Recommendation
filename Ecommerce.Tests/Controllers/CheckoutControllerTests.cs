@@ -97,7 +97,7 @@ namespace Ecommerce.Tests.Controllers
             // Assert
             result.Should().BeOfType<ViewResult>();
             var viewResult = result as ViewResult;
-            viewResult.Model.Should().Be(orderDetails);
+            viewResult?.Model.Should().Be(orderDetails);
         }
 
         [Fact]
@@ -130,7 +130,7 @@ namespace Ecommerce.Tests.Controllers
             };
             
             mockOrderService.Setup(s => s.GetOrderDetailsAsync(999))
-                .ReturnsAsync((OrderDetailsDto)null);
+                .ReturnsAsync((OrderDetailsDto?)null);
             
             // Act
             var result = await controller.OrderComplete(999);

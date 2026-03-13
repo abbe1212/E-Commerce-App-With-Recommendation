@@ -4,6 +4,7 @@ using Ecommerce.Infrastructure.Data;
 using Ecommerce.Infrastructure.Repositories;
 using Ecommerce.Core.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace Ecommerce.Tests.Repositories
 {
@@ -12,6 +13,7 @@ namespace Ecommerce.Tests.Repositories
         private static DbContextOptions<AppDbContext> CreateOptions() =>
             new DbContextOptionsBuilder<AppDbContext>()
                 .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .ConfigureWarnings(w => w.Ignore(InMemoryEventId.TransactionIgnoredWarning))
                 .Options;
 
         [Fact]
@@ -21,10 +23,19 @@ namespace Ecommerce.Tests.Repositories
             var options = CreateOptions();
             using (var context = new AppDbContext(options))
             {
+                context.Categories.AddRange(
+                    new Category { CategoryID = 1, Name = "Electronics" },
+                    new Category { CategoryID = 2, Name = "Phones" }
+                );
+                context.Tags.Add(new Tag { TagID = 1, Name = "Premium" });
                 context.Products.AddRange(
-                    new Product { ProductID = 1, Name = "Laptop Pro", CategoryID = 1, IsAvailable = true, Price = 999, StockQuantity = 5 },
-                    new Product { ProductID = 2, Name = "Gaming Laptop", CategoryID = 1, IsAvailable = true, Price = 1299, StockQuantity = 3 },
-                    new Product { ProductID = 3, Name = "Phone", CategoryID = 2, IsAvailable = true, Price = 699, StockQuantity = 10 }
+                    new Product { ProductID = 1, Name = "Laptop Pro", CategoryID = 1, IsAvailable = true, Price = 999, StockQuantity = 5, Description = "Test", ImageURL = "https://example.com/img.jpg" },
+                    new Product { ProductID = 2, Name = "Gaming Laptop", CategoryID = 1, IsAvailable = true, Price = 1299, StockQuantity = 3, Description = "Test", ImageURL = "https://example.com/img.jpg" },
+                    new Product { ProductID = 3, Name = "Phone", CategoryID = 2, IsAvailable = true, Price = 699, StockQuantity = 10, Description = "Test", ImageURL = "https://example.com/img.jpg" }
+                );
+                context.ProductTags.AddRange(
+                    new ProductTag { ProductTagID = 1, ProductID = 1, TagID = 1 },
+                    new ProductTag { ProductTagID = 2, ProductID = 2, TagID = 1 }
                 );
                 context.SaveChanges();
             }
@@ -34,7 +45,7 @@ namespace Ecommerce.Tests.Repositories
                 var repository = new ProductRepository(context);
 
                 // Act
-                var result = await repository.SearchAsync("laptop");
+                var result = await repository.SearchAsync("Laptop");
 
                 // Assert
                 result.Should().HaveCount(2);
@@ -49,10 +60,14 @@ namespace Ecommerce.Tests.Repositories
             var options = CreateOptions();
             using (var context = new AppDbContext(options))
             {
+                context.Categories.AddRange(
+                    new Category { CategoryID = 1, Name = "Electronics" },
+                    new Category { CategoryID = 2, Name = "Phones" }
+                );
                 context.Products.AddRange(
-                    new Product { ProductID = 1, Name = "Laptop Pro", CategoryID = 1, IsAvailable = true, Price = 999, StockQuantity = 5 },
-                    new Product { ProductID = 2, Name = "Gaming Laptop", CategoryID = 1, IsAvailable = true, Price = 1299, StockQuantity = 3 },
-                    new Product { ProductID = 3, Name = "Phone", CategoryID = 2, IsAvailable = true, Price = 699, StockQuantity = 10 }
+                    new Product { ProductID = 1, Name = "Laptop Pro", CategoryID = 1, IsAvailable = true, Price = 999, StockQuantity = 5, Description = "Test", ImageURL = "https://example.com/img.jpg" },
+                    new Product { ProductID = 2, Name = "Gaming Laptop", CategoryID = 1, IsAvailable = true, Price = 1299, StockQuantity = 3, Description = "Test", ImageURL = "https://example.com/img.jpg" },
+                    new Product { ProductID = 3, Name = "Phone", CategoryID = 2, IsAvailable = true, Price = 699, StockQuantity = 10, Description = "Test", ImageURL = "https://example.com/img.jpg" }
                 );
                 context.SaveChanges();
             }
@@ -77,6 +92,7 @@ namespace Ecommerce.Tests.Repositories
             var options = CreateOptions();
             using (var context = new AppDbContext(options))
             {
+                context.Categories.Add(new Category { CategoryID = 1, Name = "Electronics" });
                 for (int i = 1; i <= 15; i++)
                 {
                     context.Products.Add(new Product
@@ -86,7 +102,9 @@ namespace Ecommerce.Tests.Repositories
                         CategoryID = 1,
                         IsAvailable = true,
                         Price = 100 + i,
-                        StockQuantity = 10
+                        StockQuantity = 10,
+                        Description = "Test",
+                        ImageURL = "https://example.com/img.jpg"
                     });
                 }
                 context.SaveChanges();
@@ -112,6 +130,7 @@ namespace Ecommerce.Tests.Repositories
             var options = CreateOptions();
             using (var context = new AppDbContext(options))
             {
+                context.Categories.Add(new Category { CategoryID = 1, Name = "Electronics" });
                 for (int i = 1; i <= 5; i++)
                 {
                     context.Products.Add(new Product
@@ -121,7 +140,9 @@ namespace Ecommerce.Tests.Repositories
                         CategoryID = 1,
                         IsAvailable = true,
                         Price = 100 + i,
-                        StockQuantity = 10
+                        StockQuantity = 10,
+                        Description = "Test",
+                        ImageURL = "https://example.com/img.jpg"
                     });
                 }
                 context.SaveChanges();

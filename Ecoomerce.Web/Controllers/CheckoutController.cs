@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using System.Text.Json;
+using Ecoomerce.Web.Models;
 
 namespace Ecoomerce.Web.Controllers
 {
@@ -519,16 +520,10 @@ namespace Ecoomerce.Web.Controllers
 
             return cart;
         }
-    }
 
-    // Request models for AJAX endpoints
-    public class PromoCodeRequest
-    {
-        public string Code { get; set; }
-        public decimal SubTotal { get; set; }
-    }
+     }
 
-    public class ShippingMethodRequest
+     public class ShippingMethodRequest
     {
         public int MethodId { get; set; }
     }

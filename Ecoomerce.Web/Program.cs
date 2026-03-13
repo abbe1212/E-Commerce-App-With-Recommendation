@@ -23,7 +23,7 @@ builder.Services.AddRazorPages();
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<Ecommerce.Application.Validators.CreateProductDtoValidator>();
 // Register Web-layer validators (not in Application assembly)
-builder.Services.AddScoped<IValidator<Ecoomerce.Web.Controllers.CheckoutController.PromoCodeRequest>, Ecoomerce.Web.Validators.PromoCodeRequestValidator>();
+builder.Services.AddScoped<IValidator<Ecoomerce.Web.Models.PromoCodeRequest>, Ecoomerce.Web.Validators.PromoCodeRequestValidator>();
 
 // Caching Services
 builder.Services.AddMemoryCache();

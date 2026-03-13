@@ -1,9 +1,9 @@
 using FluentValidation;
-using Ecoomerce.Web.Controllers;
+using Ecoomerce.Web.Models;
 
 namespace Ecoomerce.Web.Validators
 {
-    public class PromoCodeRequestValidator : AbstractValidator<CheckoutController.PromoCodeRequest>
+    public class PromoCodeRequestValidator : AbstractValidator<PromoCodeRequest>
     {
         public PromoCodeRequestValidator()
         {

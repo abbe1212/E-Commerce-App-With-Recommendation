@@ -6,32 +6,12 @@ using Ecommerce.Core.Interfaces;
 using Ecommerce.Infrastructure.Data;
 using Ecommerce.Infrastructure.Repositories;
 using Ecommerce.Infrastructure.Services;
-using FluentValidation;
-using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
-using Serilog;
-using System.Threading.RateLimiting;
 using AuthenticationService = Ecommerce.Application.Services.Implementations.AuthenticationService;
 using IAuthenticationService = Ecommerce.Application.Services.Interfaces.IAuthenticationService;
 
-// ── Serilog Bootstrap Logger ──────────────────────────────────────────────────
-Log.Logger = new LoggerConfiguration()
-    .MinimumLevel.Information()
-    .MinimumLevel.Override("Microsoft.AspNetCore", Serilog.Events.LogEventLevel.Warning)
-    .MinimumLevel.Override("Microsoft.EntityFrameworkCore.Database.Command", Serilog.Events.LogEventLevel.Warning)
-    .Enrich.FromLogContext()
-    .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}")
-    .WriteTo.File("Logs/ecommerce-.log",
-        rollingInterval: RollingInterval.Day,
-        retainedFileCountLimit: 30,
-        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
-    .CreateLogger();
-
 var builder = WebApplication.CreateBuilder(args);
-builder.Host.UseSerilog();
 
 // MVC + Razor Pages
 builder.Services.AddControllersWithViews();
@@ -41,52 +21,14 @@ builder.Services.AddRazorPages();
 builder.Services.AddMemoryCache();
 builder.Services.AddOutputCache();
 
-// Rate Limiting
-builder.Services.AddRateLimiter(options =>
-{
-    options.OnRejected = async (context, token) =>
-    {
-        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
-        context.HttpContext.Response.Headers.RetryAfter = "10";
-        await context.HttpContext.Response.WriteAsJsonAsync(
-            new { error = "Too many requests. Please slow down." }, token);
-    };
-
-    options.AddSlidingWindowLimiter("SearchPolicy", opt =>
-    {
-        opt.PermitLimit = 20;
-        opt.Window = TimeSpan.FromSeconds(10);
-        opt.SegmentsPerWindow = 5;
-        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-        opt.QueueLimit = 0;
-    });
-
-    options.AddFixedWindowLimiter("GlobalPolicy", opt =>
-    {
-        opt.Window = TimeSpan.FromSeconds(1);
-        opt.PermitLimit = 100;
-        opt.QueueLimit = 0;
-    });
-});
-
-// Response Compression
-builder.Services.AddResponseCompression(options =>
-{
-    options.EnableForHttps = false;
-    options.Providers.Add<BrotliCompressionProvider>();
-    options.Providers.Add<GzipCompressionProvider>();
-});
-builder.Services.Configure<BrotliCompressionProviderOptions>(options =>
-{
-    options.Level = System.IO.Compression.CompressionLevel.Fastest;
-});
-
 // AutoMapper Registration
 builder.Services.AddAutoMapper(typeof(MappingProfile).Assembly);
 
 // Database - Using DbContextPool for better performance
 builder.Services.AddDbContextPool<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        sqlOptions => sqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery)));
 
 // Identity
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
@@ -180,13 +122,16 @@ builder.Services.AddAuthentication()
      // });
 
 // Startup validation — warn if OAuth secrets are missing
+using var startupLoggerFactory = LoggerFactory.Create(logging => logging.AddConsole());
+var startupLogger = startupLoggerFactory.CreateLogger("Startup");
+
 var googleClientId = builder.Configuration["Authentication:Google:ClientId"];
 var facebookAppId = builder.Configuration["Authentication:Facebook:AppId"];
 
 if (string.IsNullOrWhiteSpace(googleClientId))
-    Log.Warning("Authentication:Google:ClientId is empty. Google OAuth will not work.");
+    startupLogger.LogWarning("Authentication:Google:ClientId is empty. Google OAuth will not work.");
 if (string.IsNullOrWhiteSpace(facebookAppId))
-    Log.Warning("Authentication:Facebook:AppId is empty. Facebook OAuth will not work.");
+    startupLogger.LogWarning("Authentication:Facebook:AppId is empty. Facebook OAuth will not work.");
 
 var app = builder.Build();
 
@@ -200,7 +145,6 @@ else
 {
     app.UseDeveloperExceptionPage();
 }
-app.UseResponseCompression();
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
@@ -218,8 +162,6 @@ app.Use(async (context, next) =>
 });
 
 app.UseRouting();
-
-app.UseRateLimiter();
 
 app.UseOutputCache();
 

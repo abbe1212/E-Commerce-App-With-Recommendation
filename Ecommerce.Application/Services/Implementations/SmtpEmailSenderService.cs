@@ -31,7 +31,8 @@ namespace Ecommerce.Infrastructure.Services
             using var client = new SmtpClient(host, port)
             {
                 Credentials = new NetworkCredential(username, password),
-                EnableSsl = enableSsl
+                EnableSsl = enableSsl,
+                Timeout = 5000
             };
             var mail = new MailMessage(username, toEmail, subject, htmlMessage)
             {

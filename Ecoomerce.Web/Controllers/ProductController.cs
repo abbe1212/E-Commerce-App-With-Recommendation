@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.AspNetCore.OutputCaching;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Ecoomerce.Web.Controllers
 {
@@ -106,6 +107,7 @@ namespace Ecoomerce.Web.Controllers
 
         // Search Suggestions for Autocomplete
         [HttpGet]
+        [EnableRateLimiting("SearchPolicy")]
         public async Task<IActionResult> SearchSuggestions(string query)
         {
             if (string.IsNullOrWhiteSpace(query) || query.Length < 2)
@@ -269,6 +271,7 @@ namespace Ecoomerce.Web.Controllers
 
         // AJAX action for quick product search
         [HttpGet]
+        [EnableRateLimiting("SearchPolicy")]
         public async Task<IActionResult> QuickSearch(string term)
         {
             try

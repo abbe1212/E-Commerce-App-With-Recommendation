@@ -49,6 +49,7 @@ function generateTestUserEmail() {
 export default function () {
   const startTime = new Date();
   let sessionCookie = '';
+  let productId = '2'; // Default product ID, will be extracted from product listing
 
   // ===== GROUP 1: Browse Products =====
   group('Browse Products', () => {
@@ -73,6 +74,11 @@ export default function () {
       'product list loads': (r) => r.status === 200,
       'product list has content': (r) => r.body.includes('Product'),
     });
+    
+    // Extract product ID from the listing page
+    const productIdMatch = res.body.match(/\/Product\/Details\/(\d+)/);
+    productId = productIdMatch ? productIdMatch[1] : '2';
+    
     sleep(1);
 
     // Category filter
@@ -89,7 +95,7 @@ export default function () {
 
   // ===== GROUP 2: View Product Details =====
   group('View Product Details', () => {
-    const res = http.get(`${BASE_URL}/Product/Details/1`, {
+    const res = http.get(`${BASE_URL}/Product/Details/${productId}`, {
       headers: {
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
       },
@@ -131,7 +137,7 @@ export default function () {
     const res = http.post(
       `${BASE_URL}/Product/AddToCart`,
       {
-        productId: '1',
+        productId: productId,
         quantity: '1',
       },
       {

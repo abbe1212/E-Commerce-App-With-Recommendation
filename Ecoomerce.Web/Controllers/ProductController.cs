@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.AspNetCore.OutputCaching;
-using Microsoft.AspNetCore.RateLimiting;
 
 namespace Ecoomerce.Web.Controllers
 {
@@ -107,7 +106,6 @@ namespace Ecoomerce.Web.Controllers
 
         // Search Suggestions for Autocomplete
         [HttpGet]
-        [EnableRateLimiting("SearchPolicy")]
         public async Task<IActionResult> SearchSuggestions(string query)
         {
             if (string.IsNullOrWhiteSpace(query) || query.Length < 2)
@@ -117,20 +115,23 @@ namespace Ecoomerce.Web.Controllers
 
             try
             {
-                // Use server-side search with limit 8
-                var (products, _) = await _productService.SearchPagedAsync(
-                    query, null, null, null, null, null, 1, 8);
-                    
-                var suggestions = products
-                    .Select(p => new
-                    {
-                        productId = p.ProductID,
-                        name = p.Name,
-                        price = p.Price,
-                        imageUrl = p.ImageURL,
-                        categoryName = p.CategoryName
-                    })
-                    .ToList();
+                var cacheKey = $"search_suggestions_{query.ToLower().Trim()}";
+                var suggestions = await _cache.GetOrCreateAsync(cacheKey, async entry =>
+                {
+                    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(60);
+                    var (products, _) = await _productService.SearchPagedAsync(
+                        query, null, null, null, null, null, 1, 8);
+                    return products
+                        .Select(p => new
+                        {
+                            productId = p.ProductID,
+                            name = p.Name,
+                            price = p.Price,
+                            imageUrl = p.ImageURL,
+                            categoryName = p.CategoryName
+                        })
+                        .ToList<object>();
+                });
 
                 return Json(new { suggestions });
             }
@@ -271,7 +272,6 @@ namespace Ecoomerce.Web.Controllers
 
         // AJAX action for quick product search
         [HttpGet]
-        [EnableRateLimiting("SearchPolicy")]
         public async Task<IActionResult> QuickSearch(string term)
         {
             try

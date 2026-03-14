@@ -82,8 +82,8 @@ namespace Ecoomerce.Web.Controllers
                     var confirmationLink = Url.Action("ConfirmEmail", "Account",
                         new { userId = user.Id, token = token }, Request.Scheme);
 
-                    // Send confirmation email
-                   var emailBody = $@"
+                    // Send confirmation email (best-effort — SMTP failure must NOT crash registration)
+                    var emailBody = $@"
                         <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
                             <h2 style='color: #28a745;'>Welcome to ECommerce App!</h2>
                             <p>Thank you for registering with us.</p>
@@ -98,7 +98,14 @@ namespace Ecoomerce.Web.Controllers
                             </p>
                         </div>
                     ";
-                    await _emailSender.SendEmailAsync(model.Email, "Confirm Your Email", emailBody);
+                    try
+                    {
+                        await _emailSender.SendEmailAsync(model.Email, "Confirm Your Email", emailBody);
+                    }
+                    catch (Exception emailEx)
+                    {
+                        _logger.LogWarning(emailEx, "Failed to send confirmation email to {Email}. Registration continues.", model.Email);
+                    }
 
                     TempData["Message"] = "Registration successful! Please check your email to confirm your account.";
                 }

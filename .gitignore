@@ -4,9 +4,8 @@
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
 # Application secrets (keep your credentials safe!)
-**/appsettings.Development.json
+**/appsettings.json
 **/appsettings.*.json
-!**/appsettings.json
 
 # User-specific files
 *.rsuser

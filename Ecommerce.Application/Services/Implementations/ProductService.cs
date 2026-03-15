@@ -1,9 +1,8 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Ecommerce.Application.DTOs.Products;
 using Ecommerce.Application.Services.Interfaces;
 using Ecommerce.Core.Entities;
 using Ecommerce.Core.Interfaces;
-using Ecommerce.Infrastructure.Repositories;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -65,6 +64,46 @@ namespace Ecommerce.Application.Services.Implementations
             return _mapper.Map<IEnumerable<ProductDto>>(products);
         }
 
+        /// <summary>
+        /// Server-side paginated search with filtering, sorting, and paging.
+        /// </summary>
+        public async Task<(IEnumerable<ProductDto> Products, int TotalCount)> SearchPagedAsync(
+            string? searchTerm, int? categoryId, int? brandId,
+            decimal? minPrice, decimal? maxPrice, string? sortBy, int page, int pageSize)
+        {
+            var (products, totalCount) = await _productRepository.SearchPagedAsync(
+                searchTerm, categoryId, brandId, minPrice, maxPrice, sortBy, page, pageSize);
+            
+            var productDtos = _mapper.Map<IEnumerable<ProductDto>>(products);
+            return (productDtos, totalCount);
+        }
+
+        /// <summary>
+        /// Gets latest N products.
+        /// </summary>
+        public async Task<IEnumerable<ProductDto>> GetLatestProductsAsync(int count)
+        {
+            var products = await _productRepository.GetLatestAsync(count);
+            return _mapper.Map<IEnumerable<ProductDto>>(products);
+        }
+
+        /// <summary>
+        /// Gets products on sale.
+        /// </summary>
+        public async Task<IEnumerable<ProductDto>> GetOnSaleProductsAsync(int count)
+        {
+            var products = await _productRepository.GetOnSaleAsync(count);
+            return _mapper.Map<IEnumerable<ProductDto>>(products);
+        }
+
+        /// <summary>
+        /// Gets products by list of IDs (single query).
+        /// </summary>
+        public async Task<IEnumerable<ProductDto>> GetByIdsAsync(IEnumerable<int> ids)
+        {
+            var products = await _productRepository.GetByIdsAsync(ids);
+            return _mapper.Map<IEnumerable<ProductDto>>(products);
+        }
 
 
         //مش هنحتاجها لاننا استخدمنا AutoMapper

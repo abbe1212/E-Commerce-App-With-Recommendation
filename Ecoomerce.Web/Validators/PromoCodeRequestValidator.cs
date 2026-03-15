@@ -1,5 +1,5 @@
 using FluentValidation;
-using Ecoomerce.Web.Models;
+using Ecoomerce.Web.Controllers;
 
 namespace Ecoomerce.Web.Validators
 {

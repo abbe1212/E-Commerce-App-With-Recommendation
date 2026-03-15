@@ -1,11 +1,12 @@
-﻿@{
+﻿@model Ecommerce.Application.ViewModels.ProfileDashboardViewModel
+@{
     ViewData["Title"] = "My Account";
 }
 
 <div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
     <div>
         <h1 class="h4 mb-1">@ViewData["Title"]</h1>
-        <p class="text-muted mb-0">Welcome back, @User?.Identity?.Name</p>
+        <p class="text-muted mb-0">Welcome back, @Model.FirstName!</p>
     </div>
     <div class="d-flex gap-2 mt-3 mt-sm-0">
         <a class="btn btn-primary" asp-area="Profile" asp-controller="Wishlist" asp-action="Index">
@@ -18,35 +19,27 @@
     </div>
 
 <div class="row g-3 mb-4">
-    <div class="col-12 col-sm-6 col-lg-3">
+    <div class="col-12 col-sm-6 col-lg-4">
         <div class="card shadow-sm h-100">
             <div class="card-body">
-                <div class="text-muted">Orders</div>
-                <div class="fs-4 fw-semibold">—</div>
+                <div class="text-muted">Total Orders</div>
+                <div class="fs-4 fw-semibold">@Model.TotalOrders</div>
             </div>
         </div>
     </div>
-    <div class="col-12 col-sm-6 col-lg-3">
+    <div class="col-12 col-sm-6 col-lg-4">
         <div class="card shadow-sm h-100">
             <div class="card-body">
-                <div class="text-muted">Wishlist</div>
-                <div class="fs-4 fw-semibold">—</div>
+                <div class="text-muted">Wishlist Items</div>
+                <div class="fs-4 fw-semibold">@Model.WishlistItems</div>
             </div>
         </div>
     </div>
-    <div class="col-12 col-sm-6 col-lg-3">
+    <div class="col-12 col-sm-6 col-lg-4">
         <div class="card shadow-sm h-100">
             <div class="card-body">
-                <div class="text-muted">Addresses</div>
-                <div class="fs-4 fw-semibold">—</div>
-            </div>
-        </div>
-    </div>
-    <div class="col-12 col-sm-6 col-lg-3">
-        <div class="card shadow-sm h-100">
-            <div class="card-body">
-                <div class="text-muted">Coupons</div>
-                <div class="fs-4 fw-semibold">—</div>
+                <div class="text-muted">Profile Completion</div>
+                <div class="fs-4 fw-semibold">@Model.ProfileCompleteness%</div>
             </div>
         </div>
     </div>
@@ -68,9 +61,36 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td colspan="4" class="text-center text-muted py-4">No recent orders.</td>
-                            </tr>
+                            @if (Model.RecentOrders != null && Model.RecentOrders.Any())
+                            {
+                                @foreach (var order in Model.RecentOrders)
+                                {
+                                    <tr>
+                                        <td>
+                                            <a asp-area="Profile" asp-controller="OrderHistory" asp-action="Details" asp-route-orderId="@order.OrderID" class="text-decoration-none">
+                                                #@order.OrderID
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <span class="badge 
+                                                @(order.Status == Ecommerce.Core.Enums.OrderStatus.delivered ? "bg-success" : 
+                                                  order.Status == Ecommerce.Core.Enums.OrderStatus.cancelled ? "bg-danger" : 
+                                                  order.Status == Ecommerce.Core.Enums.OrderStatus.processing ? "bg-info" : 
+                                                  order.Status == Ecommerce.Core.Enums.OrderStatus.shipped ? "bg-primary" : "bg-warning")">
+                                                @order.Status
+                                            </span>
+                                        </td>
+                                        <td>@order.TotalAmount.ToString("C")</td>
+                                        <td>@order.OrderDate.ToString("MMM dd, yyyy")</td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted py-4">No recent orders.</td>
+                                </tr>
+                            }
                         </tbody>
                     </table>
                 </div>
@@ -82,13 +102,13 @@
             <div class="card-header bg-white fw-semibold">Quick Links</div>
             <div class="list-group list-group-flush">
                 <a class="list-group-item list-group-item-action" asp-area="Profile" asp-controller="OrderHistory" asp-action="Index">
-                    <i class="bi bi-receipt"></i> View All Orders
+                    <i class="bi bi-receipt"></i> Order History
                 </a>
                 <a class="list-group-item list-group-item-action" asp-area="Profile" asp-controller="ManageProfile" asp-action="Index">
-                    <i class="bi bi-geo"></i> Manage Addresses
+                    <i class="bi bi-geo"></i> Address Book
                 </a>
-                <a class="list-group-item list-group-item-action" asp-area="Profile" asp-controller="Wishlist" asp-action="Index">
-                    <i class="bi bi-heart"></i> Manage Wishlist
+                <a class="list-group-item list-group-item-action" asp-area="Profile" asp-controller="ManageProfile" asp-action="Index">
+                    <i class="bi bi-gear"></i> Profile Settings
                 </a>
             </div>
         </div>

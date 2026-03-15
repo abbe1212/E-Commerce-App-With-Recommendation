@@ -1,11 +1,10 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Ecommerce.Application.DTOs.Inventory;
 using Ecommerce.Application.DTOs.Products;
 using Ecommerce.Application.Services.Interfaces;
 using Ecommerce.Core.Entities;
 using Ecommerce.Core.Enums;
 using Ecommerce.Core.Interfaces;
-using Ecommerce.Infrastructure.Repositories;
 
 namespace Ecommerce.Application.Services.Implementations
 {

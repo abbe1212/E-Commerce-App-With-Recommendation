@@ -27,6 +27,13 @@ namespace Ecommerce.Application.ViewModels.Admin_Panel
         [Display(Name = "Brand")]
         public int? BrandID { get; set; }
 
+        [Range(0, 100)]
+        [Display(Name = "Discount Percentage")]
+        public decimal DiscountPercentage { get; set; }
+
+        [Display(Name = "Featured Product")]
+        public bool IsFeatured { get; set; }
+
         public List<SelectListItem> Categories { get; set; } = new();
         public List<SelectListItem> Brands { get; set; } = new();
         public List<SelectListItem> Tags { get; set; } = new();

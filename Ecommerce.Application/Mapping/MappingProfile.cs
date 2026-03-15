@@ -79,7 +79,13 @@ namespace Ecommerce.Application.Mapping
 
             // --- Cart Mappings ---
             CreateMap<Cart, CartDto>();
-            CreateMap<CartItem, CartItemDto>();
+            CreateMap<CartItem, CartItemDto>()
+                .ForMember(dest => dest.ProductName, opt => opt.MapFrom(src => src.Product != null ? src.Product.Name : string.Empty))
+                .ForMember(dest => dest.ImageURL, opt => opt.MapFrom(src => src.Product != null ? src.Product.ImageURL : null))
+                .ForMember(dest => dest.UnitPrice, opt => opt.MapFrom(src => src.Product != null ? src.Product.Price : 0))
+                .ForMember(dest => dest.Product, opt => opt.MapFrom(src => src.Product))
+                .ForMember(dest => dest.IsAvailable, opt => opt.MapFrom(src => src.Product != null && src.Product.IsAvailable))
+                .ForMember(dest => dest.StockQuantity, opt => opt.MapFrom(src => src.Product != null ? src.Product.StockQuantity : 0));
 
             // --- Order Mappings ---
             CreateMap<Order, OrderDto>()

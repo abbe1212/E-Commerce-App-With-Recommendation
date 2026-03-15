@@ -1,0 +1,124 @@
+{
+  "timestamp": "2026-03-14T09:13:45.492Z",
+  "note": "This stress test is DESIGNED TO FAIL at the breaking point - that indicates success in finding capacity limits",
+  "breakingPoint": {
+    "description": "Test fails when one or more of these conditions are met:",
+    "conditions": [
+      "HTTP p95 response time exceeds 5000ms",
+      "HTTP error rate exceeds 10%",
+      "Request rate drops below 50 requests/second"
+    ]
+  },
+  "metrics": {
+    "vus": {
+      "type": "gauge",
+      "contains": "default",
+      "values": {
+        "value": 7,
+        "min": 0,
+        "max": 500
+      }
+    },
+    "duration": {
+      "contains": "time",
+      "values": {
+        "min": 4829.4273,
+        "med": 38866.216499999995,
+        "max": 77067.2477,
+        "p(90)": 51228.5236,
+        "p(95)": 56165.6148,
+        "avg": 38419.21926636115
+      },
+      "type": "trend"
+    },
+    "httpReqDuration": {
+      "contains": "time",
+      "values": {
+        "p(90)": 10040.33485,
+        "p(95)": 13015.345975,
+        "avg": 3060.5394243749574,
+        "min": 0,
+        "med": 887.18065,
+        "max": 30558.0838
+      },
+      "thresholds": {
+        "p(95)<5000": {
+          "ok": false
+        }
+      },
+      "type": "trend"
+    },
+    "httpReqFailed": {
+      "values": {
+        "fails": 137896,
+        "rate": 0,
+        "passes": 0
+      },
+      "thresholds": {
+        "rate<0.10": {
+          "ok": true
+        }
+      },
+      "type": "rate",
+      "contains": "default"
+    },
+    "stressTestFailures": {
+      "thresholds": {
+        "count<100000": {
+          "ok": true
+        }
+      },
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 0,
+        "rate": 0
+      }
+    },
+    "stressTestDuration": {
+      "values": {
+        "avg": 37845.95269623485,
+        "min": 4326,
+        "med": 38256,
+        "max": 76559,
+        "p(90)": 50682,
+        "p(95)": 55547.75
+      },
+      "type": "trend",
+      "contains": "default"
+    },
+    "checks": {
+      "type": "rate",
+      "contains": "default",
+      "values": {
+        "rate": 1,
+        "passes": 150432,
+        "fails": 0
+      },
+      "thresholds": {
+        "rate>0.85": {
+          "ok": true
+        }
+      }
+    }
+  },
+  "options": {
+    "scenarios": {},
+    "thresholds": {
+        "checks": ["rate>0.85"],
+        "http_req_duration": ["p(95)<5000"],
+        "http_req_failed": ["rate<0.10"],
+        "http_reqs": ["rate>50"],
+        "stress_test_failures": ["count<100000"]
+      },
+    "summaryTrendStats": [
+        "avg",
+        "min",
+        "med",
+        "max",
+        "p(90)",
+        "p(95)"
+      ],
+    "systemTags": ["check","error","error_code","expected_response","group","method","name","proto","scenario","service","status","subproto","tls_version","url"]
+  }
+}

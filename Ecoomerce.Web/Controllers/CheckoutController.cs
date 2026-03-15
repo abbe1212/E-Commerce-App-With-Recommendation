@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using System.Text.Json;
-using Ecoomerce.Web.Models;
 
 namespace Ecoomerce.Web.Controllers
 {
@@ -106,12 +105,12 @@ namespace Ecoomerce.Web.Controllers
                 // Product details are already populated via AutoMapper from eager-loaded navigation properties
                 // No need for N+1 queries here - removed the foreach loop
 
-                // Store cart info in TempData
+                // Store cart info in TempData (decimal must be stored as string)
                 TempData["CartItems"] = System.Text.Json.JsonSerializer.Serialize(cart.Items);
-                TempData["CartSubTotal"] = cart.SubTotal;
-                TempData["CartTax"] = cart.Tax;
-                TempData["CartShipping"] = cart.Shipping;
-                TempData["CartDiscount"] = cart.Discount;
+                TempData["CartSubTotal"] = cart.SubTotal.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                TempData["CartTax"] = cart.Tax.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                TempData["CartShipping"] = cart.Shipping.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                TempData["CartDiscount"] = cart.Discount.ToString(System.Globalization.CultureInfo.InvariantCulture);
                 
                 // Store new fields from the form
                 TempData["OrderNotes"] = model.OrderNotes ?? "";
@@ -164,7 +163,7 @@ namespace Ecoomerce.Web.Controllers
             TempData["State"] = model.State;
             TempData["ZipCode"] = model.ZipCode;
             TempData["Country"] = model.Country;
-            TempData["UseShippingAsBilling"] = model.UseShippingAsBilling;
+            TempData["UseShippingAsBilling"] = model.UseShippingAsBilling.ToString();
 
             if (!model.UseShippingAsBilling)
             {
@@ -235,7 +234,8 @@ namespace Ecoomerce.Web.Controllers
             model.PromoCode = TempData["PromoCode"]?.ToString();
             if (TempData["CartDiscount"] != null)
             {
-                model.PromoDiscount = Convert.ToDecimal(TempData["CartDiscount"]);
+                decimal.TryParse(TempData["CartDiscount"]?.ToString(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var promoDiscount);
+                model.PromoDiscount = promoDiscount;
             }
 
             return View(model);
@@ -267,7 +267,7 @@ namespace Ecoomerce.Web.Controllers
                 decimal discountAmount = 0;
                 if (TempData["CartDiscount"] != null)
                 {
-                    decimal.TryParse(TempData["CartDiscount"].ToString(), out discountAmount);
+                    decimal.TryParse(TempData["CartDiscount"].ToString(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out discountAmount);
                 }
                 
                 var order = await _orderService.CreateOrderAsync(userId, shippingAddress, paymentMethod, shippingMethod, shippingCost, orderNotes, discountAmount);
@@ -500,30 +500,39 @@ namespace Ecoomerce.Web.Controllers
             // Restore Tax
             if (TempData["CartTax"] != null)
             {
-                cart.Tax = Convert.ToDecimal(TempData["CartTax"]);
+                decimal.TryParse(TempData["CartTax"]?.ToString(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var tax);
+                cart.Tax = tax;
                 TempData.Keep("CartTax");
             }
 
             // Restore Shipping
             if (TempData["CartShipping"] != null)
             {
-                cart.Shipping = Convert.ToDecimal(TempData["CartShipping"]);
+                decimal.TryParse(TempData["CartShipping"]?.ToString(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var shipping);
+                cart.Shipping = shipping;
                 TempData.Keep("CartShipping");
             }
 
             // Restore Discount
             if (TempData["CartDiscount"] != null)
             {
-                cart.Discount = Convert.ToDecimal(TempData["CartDiscount"]);
+                decimal.TryParse(TempData["CartDiscount"]?.ToString(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var discount);
+                cart.Discount = discount;
                 TempData.Keep("CartDiscount");
             }
 
             return cart;
         }
+    }
 
-     }
+    // Request models for AJAX endpoints
+    public class PromoCodeRequest
+    {
+        public string Code { get; set; }
+        public decimal SubTotal { get; set; }
+    }
 
-     public class ShippingMethodRequest
+    public class ShippingMethodRequest
     {
         public int MethodId { get; set; }
     }

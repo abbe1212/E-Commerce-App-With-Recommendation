@@ -34,7 +34,7 @@ export const options = {
     'http_req_duration': ['p(95)<5000'], // Fail if p95 response time > 5 seconds
     'http_req_failed': ['rate<0.10'],    // Fail if error rate > 10%
     'http_reqs': ['rate>50'],            // Require at least 50 requests/second
-    'stress_test_failures': ['value<100000'], // Track failure count
+    'stress_test_failures': ['count<100000'], // Track failure count
     'checks': ['rate>0.85'],             // Allow some checks to fail at breaking point
   },
 };
@@ -79,8 +79,8 @@ export default function () {
 
     // ===== CRITICAL PATH 2: View Product Details =====
     group('View Product Details', () => {
-      // GET /Product/Details/{id} - Product details page
-      const res = http.get(`${BASE_URL}/Product/Details/1`, {
+      // GET /Product/Details/{id} - Product details page (use a valid seeded product ID)
+      const res = http.get(`${BASE_URL}/Product/Details/12`, {
         headers: {
           'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         },
@@ -233,7 +233,7 @@ export default function () {
       const res = http.post(
         `${BASE_URL}/Product/AddToCart`,
         {
-          productId: '1',
+          productId: '12',
           quantity: '1',
         },
         {

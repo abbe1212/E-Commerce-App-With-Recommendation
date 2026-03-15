@@ -15,6 +15,9 @@ namespace Ecommerce.Core.Entities
         [Column(TypeName = "decimal(18,2)")]
         public decimal Price { get; set; }
 
+        [Column(TypeName = "decimal(5,2)")]
+        public decimal DiscountPercentage { get; set; } = 0;
+
         public int StockQuantity { get; set; }
 
         public string ImageURL { get; set; }
@@ -26,6 +29,8 @@ namespace Ecommerce.Core.Entities
         public virtual Brand Brand { get; set; }
 
         public bool IsAvailable { get; set; } = true;
+
+        public bool IsFeatured { get; set; } = false;
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

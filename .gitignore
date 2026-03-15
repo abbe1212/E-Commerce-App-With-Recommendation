@@ -18,6 +18,11 @@
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 
+# Markdown files
+.md
+.txt
+
+
 # Mono auto generated files
 mono_crash.*
 
@@ -37,7 +42,6 @@ bld/
 [Oo]ut/
 [Ll]og/
 [Ll]ogs/
-load-tests/results/
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/
@@ -367,3 +371,59 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+.sisyphus/evidence/task-6-build.txt
+.sisyphus/evidence/full-test-suite.txt
+.sisyphus/evidence/task-1-complete.txt
+.sisyphus/evidence/task-1-final-csproj.txt
+.sisyphus/evidence/task-1-summary.txt
+.sisyphus/evidence/task-2-build.txt
+.sisyphus/evidence/task-2-pipeline-order.txt
+.sisyphus/evidence/task-5-annotations.txt
+.sisyphus/evidence/task-5-build.txt
+.sisyphus/evidence/task-5-compression.txt
+nul
+phase2_implementation_plan.md.resolved
+phase2.resolved
+phase4.resolved
+phase5.resolved.md
+production_readiness_plan.md.resolved
+ProductsDataInserts.sql
+PROJECT_STATUS.md
+PromoteUserToAdmin.sql
+.sisyphus/boulder.json
+.sisyphus/GIT-HISTORY-REWRITE-GUIDE.md
+.sisyphus/PHASE3-COMPLETION-SUMMARY.md
+.sisyphus/PHASE3-GITHUB-MESSAGE.md
+.sisyphus/evidence/task-2-build.txt
+.sisyphus/evidence/task-5-k6-smoke.txt
+.sisyphus/evidence/task-5-logfile.txt
+.sisyphus/evidence/task-5-ratelimit-429.txt
+.sisyphus/evidence/task-7-shipping.txt
+.sisyphus/evidence/task-8-location.txt
+.sisyphus/evidence/task-9-logger.txt
+.sisyphus/evidence/task-10-tests.txt
+.sisyphus/evidence/task-12-tests.txt
+.sisyphus/evidence/task-13-build.txt
+.sisyphus/evidence/task-13-registration.txt
+.sisyphus/evidence/task-14-tests.txt
+.sisyphus/evidence/task-15-tests.txt
+.sisyphus/notepads/create-load-tests-readme/decisions.md
+.sisyphus/notepads/create-load-tests-readme/learnings.md
+.sisyphus/notepads/phase4-quality-validation/learnings.md
+.sisyphus/notepads/phase5-observability/decisions.md
+.sisyphus/notepads/phase5-observability/issues.md
+.sisyphus/notepads/phase5-observability/learnings.md
+.sisyphus/notepads/phase5-observability/problems.md
+.sisyphus/plans/phase4-quality-validation.md
+.sisyphus/plans/phase5-observability.md
+CreateAdminUser.sql
+CUsersDUBAIsourcereposECommerceApp.sisyphusnotepadsphase4-quality-validationlearnings.md
+FullDatabaseScript.sql
+implementation_plan.md
+PROJECT_STATUS.md
+.sisyphus/boulder.json
+.sisyphus/evidence/task-2-build.txt
+.sisyphus/notepads/phase4-quality-validation/learnings.md
+.sisyphus/plans/phase4-quality-validation.md
+PROJECT_STATUS.md
+.sisyphus/evidence/task-2-build.txt

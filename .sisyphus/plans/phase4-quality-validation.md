@@ -420,7 +420,7 @@ Wave FINAL (After ALL tasks — parallel review):
 
 ---
 
-- [x] 5. Write `RegisterDtoValidator` and remove data annotations from `RegisterDto`
+- [ ] 5. Write `RegisterDtoValidator` and remove data annotations from `RegisterDto`
 
   **What to do**:
   - Create file: `Ecommerce.Application/Validators/RegisterDtoValidator.cs`
@@ -500,7 +500,7 @@ Wave FINAL (After ALL tasks — parallel review):
 
 ---
 
-- [x] 6. Write `CreateProductDtoValidator`
+- [ ] 6. Write `CreateProductDtoValidator`
 
   **What to do**:
   - Create file: `Ecommerce.Application/Validators/CreateProductDtoValidator.cs`
@@ -556,7 +556,7 @@ Wave FINAL (After ALL tasks — parallel review):
 
 ---
 
-- [x] 7. Write `CheckoutViewModelValidator`
+- [ ] 7. Write `CheckoutViewModelValidator`
 
   **What to do**:
   - Create file: `Ecommerce.Application/Validators/CheckoutViewModelValidator.cs`
@@ -617,7 +617,7 @@ Wave FINAL (After ALL tasks — parallel review):
 
 ---
 
-- [x] 8. Write `PromoCodeRequestValidator` in the Web layer
+- [ ] 8. Write `PromoCodeRequestValidator` in the Web layer
 
   **What to do**:
   - Create directory: `Ecoomerce.Web/Validators/`
@@ -677,7 +677,7 @@ Wave FINAL (After ALL tasks — parallel review):
 
 ---
 
-- [x] 9. Add OAuth startup bootstrap logger to `Program.cs`
+- [ ] 9. Add OAuth startup bootstrap logger to `Program.cs`
 
   **What to do**:
   - Open `Ecoomerce.Web/Program.cs`
@@ -738,7 +738,7 @@ Wave FINAL (After ALL tasks — parallel review):
 
 ---
 
-- [x] 10. Write `OrderServiceTests` (4 tests)
+- [ ] 10. Write `OrderServiceTests` (4 tests)
 
   **What to do**:
   - Create file: `Ecommerce.Tests/Services/OrderServiceTests.cs`
@@ -819,7 +819,7 @@ Wave FINAL (After ALL tasks — parallel review):
 
 ---
 
-- [x] 11. Write `CartServiceTests` (7 tests)
+- [ ] 11. Write `CartServiceTests` (7 tests)
 
   **What to do**:
   - Create file: `Ecommerce.Tests/Services/CartServiceTests.cs`
@@ -893,7 +893,7 @@ Wave FINAL (After ALL tasks — parallel review):
 
 ---
 
-- [x] 12. Write `PromoCodeServiceTests` (5 tests)
+- [ ] 12. Write `PromoCodeServiceTests` (5 tests)
 
   **What to do**:
   - Create file: `Ecommerce.Tests/Services/PromoCodeServiceTests.cs`
@@ -960,7 +960,7 @@ Wave FINAL (After ALL tasks — parallel review):
 
 ---
 
-- [x] 13. Register FluentValidation in `Program.cs` + include `PromoCodeRequestValidator`
+- [ ] 13. Register FluentValidation in `Program.cs` + include `PromoCodeRequestValidator`
 
   **What to do**:
   - Open `Ecoomerce.Web/Program.cs`
@@ -1028,7 +1028,7 @@ Wave FINAL (After ALL tasks — parallel review):
 
 ---
 
-- [x] 14. Write `CheckoutControllerTests` (3 tests)
+- [ ] 14. Write `CheckoutControllerTests` (3 tests)
 
   **What to do**:
   - Create file: `Ecommerce.Tests/Controllers/CheckoutControllerTests.cs`
@@ -1100,7 +1100,7 @@ Wave FINAL (After ALL tasks — parallel review):
 
 ---
 
-- [x] 15. Write `ProductRepositoryTests` (4 tests, EF InMemory)
+- [ ] 15. Write `ProductRepositoryTests` (4 tests, EF InMemory)
 
   **What to do**:
   - Create file: `Ecommerce.Tests/Repositories/ProductRepositoryTests.cs`

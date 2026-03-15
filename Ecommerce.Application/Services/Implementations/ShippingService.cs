@@ -18,6 +18,16 @@ namespace Ecommerce.Application.Services.Implementations
             return Task.FromResult(totalCost);
         }
 
+        public decimal CalculateShippingCost(string shippingMethod)
+        {
+            return shippingMethod?.ToLower() switch
+            {
+                "express" => 150.0m,
+                "free" => 0.0m,
+                _ => 50.0m
+            };
+        }
+
         public Task<IEnumerable<ShippingProviderDto>> GetAvailableProvidersAsync()
         {
             // In a real app, this data would come from a database or configuration.

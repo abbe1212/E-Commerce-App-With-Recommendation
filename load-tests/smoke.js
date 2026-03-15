@@ -10,7 +10,7 @@ export const options = {
     },
 };
 
-const BASE_URL = __ENV.BASE_URL || 'http://localhost:5156';
+const BASE_URL = __ENV.BASE_URL || 'http://localhost:5068';
 
 export default function () {
     // Product listing — most common page

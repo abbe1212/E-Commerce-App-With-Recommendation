@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Ecommerce.Infrastructure.Repositories
+namespace Ecommerce.Core.Interfaces
 {
     public interface IProductRepository : IRepository<Product>
     {
@@ -50,5 +50,33 @@ namespace Ecommerce.Infrastructure.Repositories
         /// Gets a single product by its ID, including related details like Category, Brand, and Reviews.
         Task<Product?> GetProductWithDetailsAsync(int id);
 
+        /// <summary>
+        /// Server-side paginated search. ALL filtering/sorting/paging done in SQL.
+        /// Returns the products for the requested page AND the total matching count.
+        /// </summary>
+        Task<(IEnumerable<Product> Products, int TotalCount)> SearchPagedAsync(
+            string? searchTerm,
+            int? categoryId,
+            int? brandId,
+            decimal? minPrice,
+            decimal? maxPrice,
+            string? sortBy,
+            int page,
+            int pageSize);
+
+        /// <summary>
+        /// Returns products matching IDs — single WHERE IN query (used by Details page recently-viewed).
+        /// </summary>
+        Task<IEnumerable<Product>> GetByIdsAsync(IEnumerable<int> ids);
+
+        /// <summary>
+        /// Returns latest N products sorted by CreatedAt DESC — no full-table load.
+        /// </summary>
+        Task<IEnumerable<Product>> GetLatestAsync(int count);
+
+        /// <summary>
+        /// Returns products on sale (DiscountPercentage > 0) — server-side filtered.
+        /// </summary>
+        Task<IEnumerable<Product>> GetOnSaleAsync(int count);
     }
 }

@@ -1,10 +1,9 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Ecommerce.Application.DTOs;
 using Ecommerce.Application.DTOs.Cart;
 using Ecommerce.Application.Services.Interfaces;
 using Ecommerce.Core.Entities;
 using Ecommerce.Core.Interfaces;
-using Ecommerce.Infrastructure.Repositories;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -113,18 +112,23 @@ namespace Ecommerce.Application.Services.Implementations
                 {
                     CartItemID = item.CartItemID,
                     ProductID = item.ProductID,
-                    Quantity = item.Quantity
+                    Quantity = item.Quantity,
+                    ProductName = item.Product?.Name ?? string.Empty,
+                    ImageURL = item.Product?.ImageURL,
+                    UnitPrice = item.Product?.Price ?? 0m,
+                    IsAvailable = item.Product?.IsAvailable ?? false,
+                    StockQuantity = item.Product?.StockQuantity ?? 0
                 }).ToList()
             };
         }
 
         // Done
-        public async Task RemoveItemFromCartAsync(string userId, int cartItemId)
+        public async Task RemoveItemFromCartAsync(string userId, int productId)
         {
             var cart = await _cartRepository.GetCartByUserIdAsync(userId);
             if (cart?.Items != null)
             {
-                var itemToRemove = cart.Items.FirstOrDefault(i => i.CartItemID == cartItemId);
+                var itemToRemove = cart.Items.FirstOrDefault(i => i.ProductID == productId);
                 if (itemToRemove != null)
                 {
                     cart.Items.Remove(itemToRemove);
@@ -135,17 +139,17 @@ namespace Ecommerce.Application.Services.Implementations
         }
 
         // Done
-        public async Task UpdateItemQuantityAsync(string userId, int cartItemId, int newQuantity)
+        public async Task UpdateItemQuantityAsync(string userId, int productId, int newQuantity)
         {
             if (newQuantity <= 0)
             {
-                await RemoveItemFromCartAsync(userId, cartItemId);
+                await RemoveItemFromCartAsync(userId, productId);
                 return;
             }
             var cart = await _cartRepository.GetCartByUserIdAsync(userId);
             if (cart != null)
             {
-                var itemToUpdate = cart.Items.FirstOrDefault(ci => ci.CartItemID == cartItemId);
+                var itemToUpdate = cart.Items.FirstOrDefault(ci => ci.ProductID == productId);
                 if (itemToUpdate != null)
                 {
                     itemToUpdate.Quantity = newQuantity;

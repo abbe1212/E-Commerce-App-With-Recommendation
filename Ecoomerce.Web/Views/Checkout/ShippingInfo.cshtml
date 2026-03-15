@@ -58,7 +58,7 @@
                     <div class="card-body">
                         <div class="mb-3">
                             <label for="fullName" class="form-label">Full Name</label>
-                            <input type="text" class="form-control" id="fullName" required>
+                            <input asp-for="FullName" type="text" class="form-control" id="fullName" required>
                             <div class="invalid-feedback">
                                 Please enter your full name.
                             </div>
@@ -66,7 +66,7 @@
                         
                         <div class="mb-3">
                             <label for="email" class="form-label">Email Address</label>
-                            <input type="email" class="form-control" id="email" required>
+                            <input asp-for="Email" type="email" class="form-control" id="email" required>
                             <div class="invalid-feedback">
                                 Please enter a valid email address.
                             </div>
@@ -74,7 +74,7 @@
                         
                         <div class="mb-3">
                             <label for="phone" class="form-label">Phone Number</label>
-                            <input type="tel" class="form-control" id="phone" required>
+                            <input asp-for="Phone" type="tel" class="form-control" id="phone" required>
                             <div class="invalid-feedback">
                                 Please enter your phone number.
                             </div>
@@ -90,7 +90,7 @@
                         
                         <div class="mb-3">
                             <label for="city" class="form-label">City</label>
-                            <input type="text" class="form-control" id="city" required>
+                            <input asp-for="City" type="text" class="form-control" id="city" required>
                             <div class="invalid-feedback">
                                 Please enter your city.
                             </div>
@@ -99,14 +99,14 @@
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="state" class="form-label">State/Province</label>
-                                <input type="text" class="form-control" id="state" required>
+                                <input asp-for="State" type="text" class="form-control" id="state" required>
                                 <div class="invalid-feedback">
                                     Please enter your state or province.
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <label for="zipCode" class="form-label">Zip/Postal Code</label>
-                                <input type="text" class="form-control" id="zipCode" required>
+                                <input asp-for="ZipCode" type="text" class="form-control" id="zipCode" required>
                                 <div class="invalid-feedback">
                                     Please enter your zip or postal code.
                                 </div>
@@ -115,12 +115,13 @@
                         
                         <div class="mb-3">
                             <label for="country" class="form-label">Country</label>
-                            <select class="form-select" id="country" required>
+                            <select asp-for="Country" class="form-select" id="country" required>
                                 <option value="">Select Country</option>
                                 <option value="US">United States</option>
                                 <option value="CA">Canada</option>
                                 <option value="UK">United Kingdom</option>
                                 <option value="AU">Australia</option>
+                                <option value="EG">Egypt</option>
                                 <!-- Add more countries as needed -->
                             </select>
                             <div class="invalid-feedback">

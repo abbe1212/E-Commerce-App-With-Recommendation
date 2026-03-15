@@ -2,7 +2,7 @@
 using Ecommerce.Application.DTOs.Products;
 using Ecommerce.Application.Services.Interfaces;
 using Ecommerce.Core.Interfaces;
-using Ecommerce.Infrastructure.Repositories;
+
 using System;
 using System.Collections.Generic;
 using System.Linq;

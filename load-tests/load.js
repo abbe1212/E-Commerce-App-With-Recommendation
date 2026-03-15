@@ -14,7 +14,7 @@ export const options = {
     },
 };
 
-const BASE_URL = __ENV.BASE_URL || 'http://localhost:5156';
+const BASE_URL = __ENV.BASE_URL || 'http://localhost:5068';
 
 export default function () {
     const pages = [
@@ -33,5 +33,5 @@ export default function () {
         'response time < 2s': (r) => r.timings.duration < 2000,
     });
 
-    sleep(Math.random() * 2 + 0.5); // Random 0.5–2.5s think time
+    sleep(Math.random() * 2 + 0.5); 
 }

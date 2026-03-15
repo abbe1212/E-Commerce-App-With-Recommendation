@@ -13,5 +13,6 @@ namespace Ecommerce.Application.Services.Interfaces
         Task<IEnumerable<ShippingProviderDto>> GetAvailableProvidersAsync();
         Task<ShippingQuoteDto> GetShippingQuoteAsync(ShippingRequestDto request);
         Task<TrackingInfoDto> GetTrackingInfoAsync(string trackingNumber);
+        decimal CalculateShippingCost(string shippingMethod);
     }
 }
